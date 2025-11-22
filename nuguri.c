@@ -29,6 +29,7 @@ char map[MAX_STAGES][MAP_HEIGHT][MAP_WIDTH + 1];
 int player_x, player_y;
 int stage = 0;
 int score = 0;
+int collision_count = 0; //충돌 횟수 
 
 // 플레이어 상태
 int is_jumping = 0;
@@ -88,6 +89,14 @@ int main() {
         update_game(c);
         draw_game();
         usleep(90000);
+
+        if (collision_count >= 3) {
+            game_over = 1;
+            printf("\x1b[2J\x1b[H");
+            printf("Game Over! 생명이 0이 되었습니다!\n");
+            printf("최종 점수: %d\n", score);
+            continue;
+        }
 
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
@@ -285,6 +294,7 @@ void move_enemies() {
 void check_collisions() {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
+            collision_count++; // 충돌 횟수 증가
             score = (score > 50) ? score - 50 : 0;
             init_stage();
             return;
