@@ -29,6 +29,7 @@ char map[MAX_STAGES][MAP_HEIGHT][MAP_WIDTH + 1];
 int player_x, player_y;
 int stage = 0;
 int score = 0;
+int collision_count = 0; //충돌 횟수
 
 // 플레이어 상태
 int is_jumping = 0;
@@ -45,23 +46,23 @@ int coin_count = 0;
 struct termios orig_termios;
 
 // 함수 선언
-void disable_raw_mode();
-void enable_raw_mode();
-void load_maps();
-void init_stage();
-void draw_game();
+
+void disable_raw_mode(void);
+void enable_raw_mode(void);
+void load_maps(void);
+void init_stage(void);
+void draw_game(void);
 void update_game(char input);
 void move_player(char input);
-void move_enemies();
-void check_collisions();
-int kbhit();
+void move_enemies(void);
+void check_collisions(void);
+int kbhit(void);
 
-int main() {
-    srand(time(NULL));
+int main(void) {
+    srand((unsigned)time(NULL));
     enable_raw_mode();
     load_maps();
     init_stage();
-
     char c = '\0';
     int game_over = 0;
 
@@ -89,6 +90,14 @@ int main() {
         draw_game();
         usleep(90000);
 
+        if (collision_count >= 3) {
+            game_over = 1;
+            printf("\x1b[2J\x1b[H");
+            printf("Game Over! 생명이 0이 되었습니다!\n");
+            printf("최종 점수: %d\n", score);
+            continue;
+        }
+
         if (map[stage][player_y][player_x] == 'E') {
             stage++;
             score += 100;
@@ -109,8 +118,9 @@ int main() {
 
 
 // 터미널 Raw 모드 활성화/비활성화
-void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
-void enable_raw_mode() {
+
+void disable_raw_mode(void) { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
+void enable_raw_mode(void) {
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -119,7 +129,8 @@ void enable_raw_mode() {
 }
 
 // 맵 파일 로드
-void load_maps() {
+
+void load_maps(void) {
     FILE *file = fopen("map.txt", "r");
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
@@ -144,7 +155,7 @@ void load_maps() {
 
 
 // 현재 스테이지 초기화
-void init_stage() {
+void init_stage(void) {
     enemy_count = 0;
     coin_count = 0;
     is_jumping = 0;
@@ -167,7 +178,7 @@ void init_stage() {
 }
 
 // 게임 화면 그리기
-void draw_game() {
+void draw_game(void) {
     printf("\x1b[2J\x1b[H");
     printf("Stage: %d | Score: %d\n", stage + 1, score);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
@@ -227,12 +238,18 @@ void move_player(char input) {
         case ' ':
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
-                velocity_y = -2;
+                velocity_y = -3;
             }
             break;
     }
-
-    if (next_x >= 0 && next_x < MAP_WIDTH && map[stage][player_y][next_x] != '#') player_x = next_x;
+    
+    if (next_x >= 0 &&
+        next_x < MAP_WIDTH){
+        if (map[stage][player_y][next_x] != '#') {
+            player_x = next_x;
+            floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
+        }
+    }
     
     if (on_ladder && (input == 'w' || input == 's')) {
         if(next_y >= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] != '#') {
@@ -240,19 +257,53 @@ void move_player(char input) {
             is_jumping = 0;
             velocity_y = 0;
         }
-    } 
+    }
     else {
         if (is_jumping) {
-            next_y = player_y + velocity_y;
+            next_y = player_y + ((velocity_y >= 3) ? 1 : -1);
             if(next_y < 0) next_y = 0;
             velocity_y++;
-
-            if (velocity_y < 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#') {
-                velocity_y = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                player_y = next_y;
+            //수정 후
+            if (velocity_y >= 1 && velocity_y <= 3) return;
+            if (next_y < MAP_HEIGHT){
+                if (map[stage][next_y][player_x] == '#'){
+                    if (velocity_y <= 0){
+                        if (!on_ladder){
+                            velocity_y = 0;
+                        }else if(velocity_y<=-2){
+                            player_y = next_y-1;
+                            is_jumping = 0;
+                        }
+                    } else if (velocity_y > 0){
+                        is_jumping = 0;
+                    }
+                }
+                else{
+                    player_y = next_y;
+                }
             }
-            
+            /* 수정 전
+             if (velocity_y <= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#' && !on_ladder) {
+                velocity_y = 0;
+            } else if (velocity_y > 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#'){
+                is_jumping = 0;
+            } else if (next_y < MAP_HEIGHT) {
+                if(on_ladder){
+                    if (map[stage][next_y][player_x] == '#'){
+                        if(velocity_y<=-2){
+                            player_y = next_y-1;
+                            is_jumping = 0;
+                        }
+                    }
+                    else{
+                        player_y = next_y;
+                    }
+                }
+                else{
+                    player_y = next_y;
+                }
+            }
+            */
             if ((player_y + 1 < MAP_HEIGHT) && map[stage][player_y + 1][player_x] == '#') {
                 is_jumping = 0;
                 velocity_y = 0;
@@ -270,7 +321,7 @@ void move_player(char input) {
 
 
 // 적 이동 로직
-void move_enemies() {
+void move_enemies(void) {
     for (int i = 0; i < enemy_count; i++) {
         int next_x = enemies[i].x + enemies[i].dir;
         if (next_x < 0 || next_x >= MAP_WIDTH || map[stage][enemies[i].y][next_x] == '#' || (enemies[i].y + 1 < MAP_HEIGHT && map[stage][enemies[i].y + 1][next_x] == ' ')) {
@@ -282,9 +333,10 @@ void move_enemies() {
 }
 
 // 충돌 감지 로직
-void check_collisions() {
+void check_collisions(void) {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
+            collision_count++; // 충돌 횟수 증가
             score = (score > 50) ? score - 50 : 0;
             init_stage();
             return;
@@ -299,7 +351,7 @@ void check_collisions() {
 }
 
 // 비동기 키보드 입력 확인
-int kbhit() {
+int kbhit(void) {
     struct termios oldt, newt;
     int ch;
     int oldf;
@@ -317,4 +369,5 @@ int kbhit() {
         return 1;
     }
     return 0;
+
 }
