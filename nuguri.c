@@ -58,7 +58,6 @@ int coin_count = 0;
 struct termios orig_termios;
 
 // 함수 선언
-
 void disable_raw_mode(void);
 void enable_raw_mode(void);
 void load_maps(void);
@@ -69,11 +68,14 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
-void load_maps2(char****, int *);
+void load_maps2(int *);
+void free_map_size(Map_size *);
+void free_memory(void);
+void init_stage(void) ;
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
-    load_maps2(&maps, &max_height);
+    load_maps2(&max_height);
     init_stage();
     char c = '\0';
     int game_over = 0;
@@ -83,6 +85,7 @@ int main(void) {
             c = getchar();
             if (c == 'q') {
                 game_over = 1;
+                free_memory();
                 continue;
             }
             if (c == '\x1b') {
@@ -185,7 +188,7 @@ void make_new_map_size(int max_x, int max_y, int max_z){
         map_size_head = new_map_size;
     }
 }
-void load_maps2(char ****maps, int *ret){
+void load_maps2(int *ret){
     FILE *file = fopen("map.txt", "r");
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
@@ -243,13 +246,13 @@ void load_maps2(char ****maps, int *ret){
     if(temp == NULL){
         printf("맵 불러오기 실패");
     }
-    *maps = (char ***)malloc(sizeof(char **) * max_z);
+    maps = (char ***)malloc(sizeof(char **) * max_z);
     while(temp!= NULL){
-        (*maps)[temp->curr_z]= (char **)malloc(sizeof(char *) * temp->max_y);
+        maps[temp->curr_z]= (char **)malloc(sizeof(char *) * temp->max_y);
         for(int ty = 0; ty < temp-> max_y; ty++){
-            (*maps)[temp->curr_z][ty] = (char *)malloc(sizeof(char) * (temp->max_x + 3));
-            while(fgets((*maps)[temp->curr_z][ty], temp->max_x + 3, file) != NULL){
-                char temp_c = (*maps)[temp->curr_z][ty][0];
+            maps[temp->curr_z][ty] = (char *)malloc(sizeof(char) * (temp->max_x + 3));
+            while(fgets(maps[temp->curr_z][ty], temp->max_x + 3, file) != NULL){
+                char temp_c = maps[temp->curr_z][ty][0];
                 if(!(temp_c == '\n' || temp_c == '\r')){
                     break;
                 }
@@ -271,11 +274,38 @@ void store_max_x_max_y(int* max_x, int* max_y){
         if(temp == NULL){
             printf("\x1b[2J\x1b[H");
             printf("stage loading error");
+            free_memory();
             exit(1);
+            
         }
     }
     *max_x = temp->max_x;
     *max_y = temp->max_y;
+}
+void free_maps(void){
+    
+    for(int z = 0; z<max_stages; z++){
+        stage = z;
+        store_max_x_max_y(&max_width, &max_height);
+        for(int y = 0; y<max_height; y++){
+            free(maps[z][y]);
+        }
+        free(maps[z]);
+    }
+    free(maps);
+}
+
+
+
+void free_map_size(Map_size *ms){
+    if(ms != NULL){
+        free_map_size(ms ->next);
+    }
+    free(ms);
+}
+void free_memory(void){
+    free_maps();
+    free_map_size(map_size_head);
 }
 // 현재 스테이지 초기화
 void init_stage(void) {
