@@ -31,6 +31,7 @@ int stage = 0;
 int score = 0;
 int collision_count = 0; //충돌 횟수
 
+
 // 플레이어 상태
 int is_jumping = 0;
 int velocity_y = 0;
@@ -57,11 +58,11 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
-
+char*** load_maps2(void);
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
-    load_maps();
+    load_maps2();
     init_stage();
     char c = '\0';
     int game_over = 0;
@@ -130,6 +131,7 @@ void enable_raw_mode(void) {
 
 // 맵 파일 로드
 
+
 void load_maps(void) {
     FILE *file = fopen("map.txt", "r");
     if (!file) {
@@ -153,6 +155,109 @@ void load_maps(void) {
     fclose(file);
 }
 
+typedef struct map_size{
+    int max_x;
+    int max_y;
+    int curr_z;
+    struct map_size *next;
+}Map_size;
+Map_size * map_size_head = NULL;
+
+void make_new_map_size(int max_x, int max_y, int max_z){
+    Map_size *new_map_size = (Map_size *)malloc(sizeof(Map_size));
+    new_map_size->max_x = max_x;
+    new_map_size->max_y = max_y;
+    new_map_size->curr_z = max_z;
+    new_map_size->next = NULL;
+    Map_size *temp = map_size_head;
+    if(temp){
+        while(temp -> next){
+            temp = temp->next;
+        }
+        temp->next = new_map_size;
+    }
+    else{
+        map_size_head = new_map_size;
+    }
+}
+char*** load_maps2(void){
+    FILE *file = fopen("map.txt", "r");
+    if (!file) {
+        perror("map.txt 파일을 열 수 없습니다.");
+        exit(1);
+    }
+
+    //printf("file x : %d", x);
+    //exit(0);
+    /*몇 개의 Map이 있는지 세기(max_z)*/
+    
+    int x = 0, y = 0, max_x = 0, max_y = 0, max_z = 0;
+    char ch;
+    while(1){
+        ch = fgetc(file);
+        if(ch == EOF){
+            if(y > 0){
+                if(max_y < y){
+                    max_y = y;
+                }
+            }
+            break;
+        }
+        else if(ch == '\n'){
+            if(y == 0 && x == 0){
+                continue;
+            }
+            if(x > 0){
+                y++;
+                if(max_x < x){
+                    max_x = x;
+                }
+                x = 0;
+            }
+            else{
+                if(max_y < y){
+                    max_y = y;
+                }
+                make_new_map_size(max_x, max_y, max_z);
+                printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
+                max_z++;
+                x = y = max_x = max_y = 0;
+            }
+        }
+        else if(ch != '\r'){
+            x++;
+        }
+    }
+    if(y > 0){
+        make_new_map_size(max_x, max_y, max_z);
+        printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
+    }
+    rewind(file);
+    Map_size * temp = map_size_head;
+    if(temp == NULL){
+        printf("맵 불러오기 실패");
+    }
+    char ***maps = (char ***)malloc(sizeof(char **) * max_z);
+    while(temp!= NULL){
+        maps[temp->curr_z]= (char **)malloc(sizeof(char *) * temp->max_y);
+        for(int ty = 0; ty < temp-> max_y; ty++){
+            maps[temp->curr_z][ty] = (char *)malloc(sizeof(char) * (temp->max_x + 3));
+            while(fgets(maps[temp->curr_z][ty], temp->max_x + 3, file) != NULL){
+                char temp_c = maps[temp->curr_z][ty][0];
+                if(!(temp_c == '\n' || temp_c == '\r')){
+                    break;
+                }
+            }
+        }
+        /*if(map[temp->curr_z] == NULL){
+            printf("맵 불러오기 실패, 메모리");
+            exit(0);
+        }//별도의 함수 처리 예정*/
+        temp = temp->next;
+    }
+    return maps;
+    
+}
 
 // 현재 스테이지 초기화
 void init_stage(void) {
