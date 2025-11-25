@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="BackendCodeEditorMiscSettings">
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
     <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
   </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="54110679-e9fc-46d3-b690-9bab66d05a5b" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nuguri.c" beforeDir="false" afterPath="$PROJECT_DIR$/nuguri.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,10 +57,15 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;jisu&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Jisu/Documents/GitHub/Advanced_Data_Structures_Team6/main.c&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Jisu/Documents/GitHub/Advanced_Data_Structures_Team6/main.c&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
   }
 }</component>
-  <component name="RunManager" selected="C/C++ 파일.main.c">
+  <component name="RunManager" selected="C/C++ 파일.nuguri.c">
     <configuration name="main.c" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Advanced_Data_Structures_Team6" TARGET_NAME="main.c" CONFIG_NAME="main.c">
       <option name="sourceFile" value="main.c" />
       <method v="2">
@@ -71,6 +88,10 @@
       <updated>1763558951942</updated>
       <workItem from="1763558953021" duration="225000" />
       <workItem from="1763888123512" duration="28000" />
+      <workItem from="1764054800702" duration="154000" />
+      <workItem from="1764054983818" duration="363000" />
+      <workItem from="1764056109068" duration="599000" />
+      <workItem from="1764059444046" duration="3614000" />
     </task>
     <servers />
   </component>
