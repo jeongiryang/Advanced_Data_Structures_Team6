@@ -249,6 +249,7 @@ void move_player(char input) {
         next_x < MAP_WIDTH){
         if (map[stage][player_y][next_x] != '#') {
             player_x = next_x;
+            floor_tile = (player_y + 1 < MAP_HEIGHT) ? map[stage][player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
         }
     }
     
