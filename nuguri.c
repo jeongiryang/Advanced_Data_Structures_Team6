@@ -75,12 +75,12 @@ void init_stage(void) ;
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
-    load_maps2(&max_height);
+    load_maps2(&max_stages);
     init_stage();
     char c = '\0';
     int game_over = 0;
 
-    while (!game_over && stage < max_height) {
+    while (!game_over && stage < max_stages) {
         if (kbhit()) {
             c = getchar();
             if (c == 'q') {
@@ -116,7 +116,7 @@ int main(void) {
         if (maps[stage][player_y][player_x] == 'E') {
             stage++;
             score += 100;
-            if (stage < max_width) {
+            if (stage < max_stages) {
                 init_stage();
             } else {
                 game_over = 1;
@@ -407,6 +407,7 @@ void move_player(char input) {
     if (on_ladder && (input == 'w' || input == 's')) {
         if(next_y >= 0 && next_y < max_height && maps[stage][next_y][player_x] != '#') {
             player_y = next_y;
+            floor_tile = (player_y + 1 < max_height) ? maps[stage][player_y + 1][player_x] : '#'; //y좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
             is_jumping = 0;
             velocity_y = 0;
         }
@@ -462,7 +463,7 @@ void move_player(char input) {
                 velocity_y = 0;
             }
         } else {
-            if (floor_tile != '#' && floor_tile != 'H') {
+            if (floor_tile != '#' && floor_tile != 'H' && !on_ladder) {
                  if (player_y + 1 < max_height) player_y++;
                  else init_stage();
             }
