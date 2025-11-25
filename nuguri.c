@@ -1,10 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#ifndef _WIN32
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <time.h>
+#else
+#include <windows.h>
+#include <conio.h>
+#endif
+
 
 // 맵 및 게임 요소 정의 (수정된 부분)
 #define MAP_WIDTH 40  // 맵 너비를 40으로 변경
