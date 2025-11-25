@@ -57,6 +57,7 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
+void play_jump_sound(void);
 
 int main(void) {
     srand((unsigned)time(NULL));
@@ -239,6 +240,7 @@ void move_player(char input) {
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -3;
+                play_jump_sound();
             }
             break;
     }
@@ -369,4 +371,10 @@ int kbhit(void) {
     }
     return 0;
 
+}
+
+// 점프 효과음
+void play_jump_sound(void) {
+    system("afplay /System/Library/Sounds/Tink.aiff &"); //mac 버전 stdlib.h 사용
+    fflush(stdout);
 }
