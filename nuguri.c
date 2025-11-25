@@ -56,8 +56,8 @@ int coin_count = 0;
 
 // 터미널 설정
 struct termios orig_termios;
-
 // 함수 선언
+void check_is_null(void *); //추가
 void disable_raw_mode(void);
 void enable_raw_mode(void);
 void load_maps(void);
@@ -72,10 +72,17 @@ void load_maps2(int *);
 void free_map_size(Map_size *);
 void free_memory(void);
 void init_stage(void) ;
+void free_maps(int);
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
     load_maps2(&max_stages);
+    if(maps == NULL){
+        printf("\x1b[2J\x1b[H");
+        printf("stage loading error");
+        free_memory();
+        exit(1);
+    }
     init_stage();
     char c = '\0';
     int game_over = 0;
@@ -126,7 +133,7 @@ int main(void) {
             }
         }
     }
-
+    free_memory();
     disable_raw_mode();
     return 0;
 }
@@ -169,10 +176,14 @@ void enable_raw_mode(void) {
     fclose(file);
 }*/
 
-
-
 void make_new_map_size(int max_x, int max_y, int max_z){
     Map_size *new_map_size = (Map_size *)malloc(sizeof(Map_size));
+    if(new_map_size == NULL){
+        free_map_size(map_size_head);
+        printf("\x1b[2J\x1b[H");
+        printf("메모리 할당 실패");
+        exit(1); //맵 데이터를 받지 않았으므로 바로 종료
+    }
     new_map_size->max_x = max_x;
     new_map_size->max_y = max_y;
     new_map_size->curr_z = max_z;
@@ -245,24 +256,33 @@ void load_maps2(int *ret){
     Map_size * temp = map_size_head;
     if(temp == NULL){
         printf("맵 불러오기 실패");
+        return;
     }
     maps = (char ***)malloc(sizeof(char **) * max_z);
+    if(maps == NULL){
+        free_map_size(map_size_head);
+        return;
+    }
     while(temp!= NULL){
         maps[temp->curr_z]= (char **)malloc(sizeof(char *) * temp->max_y);
+        if(maps[temp->curr_z] == NULL){
+            free_maps(temp->curr_z);
+            return;
+        }
+        
         for(int ty = 0; ty < temp-> max_y; ty++){
             maps[temp->curr_z][ty] = (char *)malloc(sizeof(char) * (temp->max_x + 3));
+            if(maps[temp->curr_z][ty] == NULL){
+                free_maps(temp->curr_z);
+                return;
+            }
             while(fgets(maps[temp->curr_z][ty], temp->max_x + 3, file) != NULL){
                 char temp_c = maps[temp->curr_z][ty][0];
                 if(!(temp_c == '\n' || temp_c == '\r')){
                     break;
                 }
             }
-            //printf("temp->curr_z%d, %s, index : %d\n, index : %c\n", temp->curr_z, maps[temp->curr_z][ty], maps[temp->curr_z][ty][41], maps[temp->curr_z][ty][41]);
         }
-        /*if(map[temp->curr_z] == NULL){
-            printf("맵 불러오기 실패, 메모리");
-            exit(0);
-        }//별도의 함수 처리 예정*/
         temp = temp->next;
     }
     *ret = max_z;
@@ -275,6 +295,7 @@ void store_max_x_max_y(int* max_x, int* max_y){
             printf("\x1b[2J\x1b[H");
             printf("stage loading error");
             free_memory();
+            
             exit(1);
             
         }
@@ -282,8 +303,8 @@ void store_max_x_max_y(int* max_x, int* max_y){
     *max_x = temp->max_x;
     *max_y = temp->max_y;
 }
-void free_maps(void){
-    
+void free_maps(int failed_z){
+    /*
     for(int z = 0; z<max_stages; z++){
         stage = z;
         store_max_x_max_y(&max_width, &max_height);
@@ -292,7 +313,30 @@ void free_maps(void){
         }
         free(maps[z]);
     }
-    free(maps);
+    free(maps);*/
+    if(maps != NULL){
+        Map_size *temp = map_size_head;
+        while(temp != NULL && temp -> curr_z < failed_z){
+            if(maps[temp->curr_z] != NULL){
+                for(int j = 0; j < temp->max_y; j++){
+                    if(maps[temp->curr_z][j] != NULL){
+                        free(maps[temp->curr_z][j]);
+                    }
+                    else{
+                        break;
+                    }
+                }
+                free(maps[temp->curr_z]);
+            }
+            else{
+                break;
+            }
+            temp = temp->next;
+        }
+        free(maps);
+        maps = NULL;
+        return;
+    }
 }
 
 
@@ -304,7 +348,7 @@ void free_map_size(Map_size *ms){
     free(ms);
 }
 void free_memory(void){
-    free_maps();
+    free_maps(max_stages);
     free_map_size(map_size_head);
 }
 // 현재 스테이지 초기화
