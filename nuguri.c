@@ -78,6 +78,7 @@ void free_map_size(Map_size *);
 void free_memory(void);
 void init_stage(void) ;
 void free_maps(int);
+void play_jump_sound(void);
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
@@ -395,7 +396,7 @@ void init_stage(void) {
 // 게임 화면 그리기
 void draw_game(void) {
     printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d\n", stage + 1, score);
+    printf("Stage: %d | Score: %d | HEART: %d\n", stage + 1, score, 3 - collision_count);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
     char display_map[max_height][max_width + 1];
     for(int y=0; y < max_height; y++) {
@@ -453,6 +454,7 @@ void move_player(char input) {
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
                 velocity_y = -3;
+                play_jump_sound();
             }
             break;
     }
@@ -642,4 +644,10 @@ void reset_game(void) { // 재시작하면 초기화
     stage = 0;
     score = 0;
     collision_count = 0;
+}
+
+// 점프 효과음
+void play_jump_sound(void) {
+    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
+    fflush(stdout);
 }
