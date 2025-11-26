@@ -571,7 +571,11 @@ int kbhit(void) {
 
 }
 
+<<<<<<< HEAD
 // 오프닝 출력 함수
+=======
+// 타이틀 화면 출력 함수
+>>>>>>> 2bb91b9 (오프닝 화면 추가)
 void opening(void) {
     printf("\x1b[2J\x1b[H");  // 화면 지우기 
     
@@ -586,6 +590,7 @@ void opening(void) {
     printf("    ##########################################\n");
     printf("\n");
     getchar();
+<<<<<<< HEAD
 }
 // 엔딩 출력 함수
 void ending(int result) {
@@ -616,4 +621,6 @@ void ending(int result) {
     // 입력 버퍼 비우기 및 대기 
     fflush(stdout);
     getchar(); 
+=======
+>>>>>>> 2bb91b9 (오프닝 화면 추가)
 }
