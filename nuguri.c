@@ -74,6 +74,8 @@ void clrscr(void) {
     printf("\x1b[2J\x1b[H");
     // \x1b : ESCAPE
     // 2J : 2 Page 만큼 화면 지우기
+    // ANSI 이스케이프 명령에 대해 세부조사를 해봤는데 2J 자체가 화면 비우기를 의미하는게 아니라
+    // 화면 비우기 명령은 J고, 앞에 2는 지울 페이지 수였음
 #endif
 }
 
@@ -124,7 +126,7 @@ int main(void) {
                 switch (getchar()) {
 #else
             if (c == '[') {
-                switch (_getch()) {
+                switch (getch()) {
 #endif
                     case 'A': c = 'w'; break; // Up
                     case 'B': c = 's'; break; // Down
@@ -139,7 +141,11 @@ int main(void) {
 
         update_game(c);
         draw_game();
+#ifndef __WIN32
         usleep(90000);
+#else
+        Sleep(9);
+#endif
 
         if (collision_count >= 3) {
             game_over = 1;
@@ -164,6 +170,9 @@ int main(void) {
     }
     free_memory();
     disable_raw_mode();
+#ifdef __WIN32
+    if (getch()) return 0;
+#endif
     return 0;
 }
 
@@ -171,14 +180,14 @@ int main(void) {
 // 터미널 Raw 모드 활성화/비활성화
 
 void disable_raw_mode(void) {
-    #ifndef _WIN32
+    #ifndef __WIN32
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     #else
     #endif
 }
 
 void enable_raw_mode(void) {
-    #ifndef _WIN32
+    #ifndef __WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -587,7 +596,7 @@ void check_collisions(void) {
 }
 
 // 비동기 키보드 입력 확인 (Linux/MacOS 전용. Windows는 그냥 kbhit() 그대로 쓰면 된다.)
-#ifndef _WIN32
+#ifndef __WIN32
 int kbhit(void) {
     struct termios oldt, newt;
     int ch;
