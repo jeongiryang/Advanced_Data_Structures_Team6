@@ -1,3 +1,9 @@
+// Windows 보안 경고 무시
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS // scanf 보안경고 무시
+#define _CRT_NONSTDC_NO_DEPRECATE // VS환경에서 해더파일안의 내장된 함수 이름들 중복 경고 무시
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,6 +76,9 @@ void clrscr(void) {
 #ifdef __WIN32
     system("cls");
     // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+    //콘솔을 UTF-8 포맷으로 출력하게 한다. 이 과정이 없으면, 한글과 특수문자 등등 ASCII 밖 and UNICODE 안 범위의 글자들이 깨지게 된다.
 #else
     printf("\x1b[2J\x1b[H");
     // \x1b : ESCAPE
@@ -125,7 +134,8 @@ int main(void) {
                 getchar(); // '['
                 switch (getchar()) {
 #else
-            if (c == '[') {
+            if (c == 27) {
+                getch();
                 switch (getch()) {
 #endif
                     case 'A': c = 'w'; break; // Up

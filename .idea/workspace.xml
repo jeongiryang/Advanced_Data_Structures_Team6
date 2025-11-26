@@ -20,6 +20,7 @@
     <list default="true" id="54110679-e9fc-46d3-b690-9bab66d05a5b" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nuguri.c" beforeDir="false" afterPath="$PROJECT_DIR$/nuguri.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nuguri.exe" beforeDir="false" afterPath="$PROJECT_DIR$/nuguri.exe" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +102,7 @@
       <workItem from="1764054983818" duration="363000" />
       <workItem from="1764056109068" duration="599000" />
       <workItem from="1764059444046" duration="3614000" />
-      <workItem from="1764157373761" duration="1572000" />
+      <workItem from="1764157373761" duration="2970000" />
     </task>
     <servers />
   </component>
