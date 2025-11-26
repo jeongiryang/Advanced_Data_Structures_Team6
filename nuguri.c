@@ -376,6 +376,6 @@ int kbhit(void) {
 
 // 점프 효과음
 void play_jump_sound(void) {
-    system("afplay /System/Library/Sounds/Tink.aiff &"); //mac 버전 stdlib.h 사용
+    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
     fflush(stdout);
 }
