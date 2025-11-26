@@ -57,9 +57,12 @@ int coin_count = 0;
 // 터미널 설정
 struct termios orig_termios;
 // 함수 선언
-void opening(void); // 추가
-void ending(int result); // 추가
+void opening(void); // 추가: 오프닝
+int ending(int result); // 추가(나가기-다시하기 선택지 구현을 위해 수정)
+void reset_game(void); // 추가: 게임 재시작 시 전역변수 초기화
+
 void check_is_null(void *); //추가
+
 void disable_raw_mode(void);
 void enable_raw_mode(void);
 void load_maps(void);
@@ -88,16 +91,19 @@ int main(void) {
 
     opening(); // 추가
 
+    while (1) { // 추가(게임 무한 루프-왜냐하면 선택지 때문에 )
+    reset_game(); // 추가: 점수랑 스테이지 초기화
     init_stage();
     char c = '\0';
     int game_over = 0;
+    int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
 
     while (!game_over && stage < max_stages) {
         if (kbhit()) {
             c = getchar();
             if (c == 'q') {
+               restart=0;
                 game_over = 1;
-                free_memory();
                 continue;
             }
             if (c == '\x1b') {
@@ -116,24 +122,34 @@ int main(void) {
         update_game(c);
         draw_game();
         usleep(90000);
-
+            
+        // 추가: 
+            // 게임 오버 처리 여기서
         if (collision_count >= 3) {
-            ending(0); // 0=게임 오버 화면 출력
-            game_over = 1;
-            continue;
+            restart=ending(0); 
+            break; 
         }
 
         if (maps[stage][player_y][player_x] == 'E') {
-            stage++;
+           stage++;
             score += 100;
             if (stage < max_stages) {
                 init_stage();
             } else {
-                game_over = 1;
-                ending(1); // 1=클리어 화면 출력
+               restart = ending(1); // 사용자 선택(r/q) 받기
+             break; 
             }
         }
     }
+            // 재시작 여부 확인
+        if (restart == 1) 
+        continue; 
+        else
+         break; 
+
+      
+    }
+
     free_memory();
     disable_raw_mode();
     return 0;
@@ -571,11 +587,7 @@ int kbhit(void) {
 
 }
 
-<<<<<<< HEAD
 // 오프닝 출력 함수
-=======
-// 타이틀 화면 출력 함수
->>>>>>> 2bb91b9 (오프닝 화면 추가)
 void opening(void) {
     printf("\x1b[2J\x1b[H");  // 화면 지우기 
     
@@ -590,10 +602,9 @@ void opening(void) {
     printf("    ##########################################\n");
     printf("\n");
     getchar();
-<<<<<<< HEAD
 }
 // 엔딩 출력 함수
-void ending(int result) {
+int ending(int result) {
     printf("\x1b[2J\x1b[H"); // 화면 지우기
     printf("\n\n");
     printf("    ##########################################\n");
@@ -614,13 +625,21 @@ void ending(int result) {
     printf("    #                                        #\n");
     printf("    ##########################################\n");
     printf("\n");
+
+    // 추가: 선택지 안내ㅁ
+    printf("     Press 'r': Restart / 'q': Quit \n");
     
-    // 종료 전 키 입력 대기
-    printf("    Press any key to exit...");
+   // 추가: 입력대기
+    while(1) {
+        char c = getchar();
+        if (c == 'r' || c == 'R') return 1;
+        else if (c == 'q' || c == 'Q') return 0;
+    }
     
-    // 입력 버퍼 비우기 및 대기 
-    fflush(stdout);
-    getchar(); 
-=======
->>>>>>> 2bb91b9 (오프닝 화면 추가)
+   
+}
+void reset_game(void) { // 재시작하면 초기화
+    stage = 0;
+    score = 0;
+    collision_count = 0;
 }
