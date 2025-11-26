@@ -57,6 +57,7 @@ int coin_count = 0;
 // 터미널 설정
 struct termios orig_termios;
 // 함수 선언
+void opening(void); // 추가
 void check_is_null(void *); //추가
 void disable_raw_mode(void);
 void enable_raw_mode(void);
@@ -83,6 +84,9 @@ int main(void) {
         free_memory();
         exit(1);
     }
+
+    opening(); // 추가
+
     init_stage();
     char c = '\0';
     int game_over = 0;
@@ -568,4 +572,21 @@ int kbhit(void) {
     }
     return 0;
 
+}
+
+// 타이틀 화면 출력 함수
+void opening(void) {
+    printf("\x1b[2J\x1b[H");  // 화면 지우기 
+    
+    printf("\n\n");
+    printf("    ##########################################\n");
+    printf("    #                                        #\n");
+    printf("    #         N  U  G  U  R  I               #\n");
+    printf("    #             G  A  M  E                 #\n");
+    printf("    #                                        #\n");
+    printf("    #       - Press Any Key to Start -       #\n");
+    printf("    #                                        #\n");
+    printf("    ##########################################\n");
+    printf("\n");
+    getchar();
 }
