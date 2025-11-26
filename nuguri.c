@@ -58,6 +58,7 @@ int coin_count = 0;
 struct termios orig_termios;
 // 함수 선언
 void opening(void); // 추가
+void ending(int result); // 추가
 void check_is_null(void *); //추가
 void disable_raw_mode(void);
 void enable_raw_mode(void);
@@ -117,10 +118,8 @@ int main(void) {
         usleep(90000);
 
         if (collision_count >= 3) {
+            ending(0); // 0=게임 오버 화면 출력
             game_over = 1;
-            printf("\x1b[2J\x1b[H");
-            printf("Game Over! 생명이 0이 되었습니다!\n");
-            printf("최종 점수: %d\n", score);
             continue;
         }
 
@@ -131,9 +130,7 @@ int main(void) {
                 init_stage();
             } else {
                 game_over = 1;
-                printf("\x1b[2J\x1b[H");
-                printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
-                printf("최종 점수: %d\n", score);
+                ending(1); // 1=클리어 화면 출력
             }
         }
     }
@@ -574,7 +571,7 @@ int kbhit(void) {
 
 }
 
-// 타이틀 화면 출력 함수
+// 오프닝 출력 함수
 void opening(void) {
     printf("\x1b[2J\x1b[H");  // 화면 지우기 
     
@@ -589,4 +586,34 @@ void opening(void) {
     printf("    ##########################################\n");
     printf("\n");
     getchar();
+}
+// 엔딩 출력 함수
+void ending(int result) {
+    printf("\x1b[2J\x1b[H"); // 화면 지우기
+    printf("\n\n");
+    printf("    ##########################################\n");
+    printf("    #                                        #\n");
+    
+    if (result == 1) {
+        // 게임 클리어 
+        printf("    #    C O N G R A T U L A T I O N S       #\n");
+        printf("    #         ALL STAGES CLEARED!            #\n");
+    } else {
+        // 게임 오버 
+        printf("    #          G A M E   O V E R             #\n");
+        printf("    #           Try Again ...                #\n");
+    }
+    
+    printf("    #                                        #\n");
+    printf("    #        FINAL SCORE: %-5d              #\n", score);
+    printf("    #                                        #\n");
+    printf("    ##########################################\n");
+    printf("\n");
+    
+    // 종료 전 키 입력 대기
+    printf("    Press any key to exit...");
+    
+    // 입력 버퍼 비우기 및 대기 
+    fflush(stdout);
+    getchar(); 
 }
