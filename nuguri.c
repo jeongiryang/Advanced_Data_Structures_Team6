@@ -628,7 +628,7 @@ int ending(int result) {
     printf("    ##########################################\n");
     printf("\n");
 
-    // 추가: 선택지 안내ㅁ
+    // 추가: 선택지 안내
     printf("     Press 'r': Restart / 'q': Quit \n");
     
    // 추가: 입력대기
