@@ -181,7 +181,7 @@ void init_stage(void) {
 // 게임 화면 그리기
 void draw_game(void) {
     printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d\n", stage + 1, score);
+    printf("Stage: %d | Score: %d | HEART: %d\n", stage + 1, score, 3 - collision_count);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
     char display_map[MAP_HEIGHT][MAP_WIDTH + 1];
