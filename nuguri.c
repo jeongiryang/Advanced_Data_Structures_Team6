@@ -60,13 +60,23 @@ int enemy_count = 0;
 Coin coins[MAX_COINS];
 int coin_count = 0;
 
-// 터미널 설정
+// 터미널 설정 (윈도우에선 필요없는작업)
 #ifndef __WIN32
 struct termios orig_termios;
-#else
 #endif
 
 // 함수 선언
+void clrscr(void) {
+#ifdef __WIN32
+    system("cls");
+    // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
+#else
+    printf("\x1b[2J\x1b[H");
+    // \x1b : ESCAPE
+    // 2J : 2 Page 만큼 화면 지우기
+#endif
+}
+
 void check_is_null(void *); //추가
 void disable_raw_mode(void);
 void enable_raw_mode(void);
@@ -88,7 +98,7 @@ int main(void) {
     enable_raw_mode();
     load_maps2(&max_stages);
     if(maps == NULL){
-        printf("\x1b[2J\x1b[H");
+        clrscr();
         printf("stage loading error");
         free_memory();
         exit(1);
@@ -96,10 +106,9 @@ int main(void) {
     init_stage();
     char c = '\0';
     int game_over = 0;
-
     while (!game_over && stage < max_stages) {
         if (kbhit()) {
-            #ifndef _WIN32
+            #ifndef __WIN32
             c = getchar();
             #else
             c = _getch();
@@ -109,13 +118,19 @@ int main(void) {
                 free_memory();
                 continue;
             }
+#ifndef __WIN32
             if (c == '\x1b') {
                 getchar(); // '['
                 switch (getchar()) {
+#else
+            if (c == '[') {
+                switch (_getch()) {
+#endif
                     case 'A': c = 'w'; break; // Up
                     case 'B': c = 's'; break; // Down
                     case 'C': c = 'd'; break; // Right
                     case 'D': c = 'a'; break; // Left
+                    default: break;
                 }
             }
         } else {
@@ -128,7 +143,7 @@ int main(void) {
 
         if (collision_count >= 3) {
             game_over = 1;
-            printf("\x1b[2J\x1b[H");
+            clrscr();
             printf("Game Over! 생명이 0이 되었습니다!\n");
             printf("최종 점수: %d\n", score);
             continue;
@@ -141,7 +156,7 @@ int main(void) {
                 init_stage();
             } else {
                 game_over = 1;
-                printf("\x1b[2J\x1b[H");
+                clrscr();
                 printf("축하합니다! 모든 스테이지를 클리어했습니다!\n");
                 printf("최종 점수: %d\n", score);
             }
@@ -203,12 +218,7 @@ void make_new_map_size(int max_x, int max_y, int max_z){
     Map_size *new_map_size = (Map_size *)malloc(sizeof(Map_size));
     if(new_map_size == NULL){
         free_map_size(map_size_head);
-    #ifndef __WIN32
-        printf("\x1b[2J\x1b[H");
-    #else
-        system("cls");
-        printf("\r");
-    #endif
+        clrscr();
         printf("메모리 할당 실패");
         exit(1); //맵 데이터를 받지 않았으므로 바로 종료
     }
@@ -320,7 +330,7 @@ void store_max_x_max_y(int* max_x, int* max_y){
     for(int i = 0; i<stage; i++){
         temp = temp -> next;
         if(temp == NULL){
-            printf("\x1b[2J\x1b[H");
+            clrscr();
             printf("stage loading error");
             free_memory();
             
@@ -405,7 +415,7 @@ void init_stage(void) {
 
 // 게임 화면 그리기
 void draw_game(void) {
-    printf("\x1b[2J\x1b[H");
+    clrscr();
     printf("Stage: %d | Score: %d\n", stage + 1, score);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
     char display_map[max_height][max_width + 1];
