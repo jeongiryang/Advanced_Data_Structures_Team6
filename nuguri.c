@@ -653,6 +653,17 @@ void reset_game(void) { // 재시작하면 초기화
 
 // 점프 효과음
 void play_jump_sound(void) {
+#ifdef __WIN32
+    system("powershell -c \"[Console]::Beep(440, 90)\"");
+    //windows powershell 명령어 사용. 440Hz (4옥타브 라)의 소리를 90ms동안 출력한다
+    // 근데 이게 ASync가 아니라서 게임에 딜레이가 생기는 문제가 있음
+    fflush(stdout);
+#elif __linux__
+    printf("\007");
+    // ASCII 코드 7번 BELL (작동여부 확인 필요)
+    fflush(stdout);
+#else
     system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
     fflush(stdout);
+#endif
 }
