@@ -1,0 +1,21 @@
+{
+  "configurations": [
+    {
+      "includePath": [
+        // local include folder
+        "${workspaceRoot}\\include",
+        // Windows SDK and CRT headers
+        "${env.WindowsSdkDir}\\include\\${env.WindowsSDKVersion}\\ucrt",
+        "${env.NETFXSDKDir}\\include\\um",
+        "${env.WindowsSdkDir}\\include\\${env.WindowsSDKVersion}\\um",
+        "${env.WindowsSdkDir}\\include\\${env.WindowsSDKVersion}\\shared",
+        "${env.VCToolsInstallDir}\\include"
+      ],
+      "inheritEnvironments": [
+        "msvc_64"
+      ],
+      "intelliSenseMode": "windows-msvc-x64",
+      "name": "x64-Release"
+    }
+  ]
+}
