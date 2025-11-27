@@ -1,6 +1,4 @@
 .idea/
-.vs/
-
 .env
 .xml
 .iml
@@ -10,4 +8,3 @@
 .json
 .ipch
 .vsidx
-.idea/workspace.xml
