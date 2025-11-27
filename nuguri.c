@@ -24,21 +24,14 @@ typedef struct {
     int collected;
 } Coin;
 
-typedef struct map_size{
-    int max_x;
-    int max_y;
-    int curr_z;
-    struct map_size *next;
-}Map_size;
+
 
 // 전역 변수
-Map_size * map_size_head = NULL; //추가
-char ***maps = NULL; //추가
-int max_stages = 0; //추가
+char **maps = NULL; //추가
+int curr_stage = 0;
 int max_height = 0;
 int max_width = 0;
 int player_x, player_y;
-int stage = 0;
 int score = 0;
 int collision_count = 0; //충돌 횟수
 
@@ -73,85 +66,85 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
-void load_maps2(int *);
-void free_map_size(Map_size *);
-void free_memory(void);
+void load_maps2(void);
 void init_stage(void) ;
-void free_maps(int);
+void free_maps(void);
 void play_jump_sound(void);
 int main(void) {
     srand((unsigned)time(NULL));
     enable_raw_mode();
-    load_maps2(&max_stages);
-    if(maps == NULL){
-        printf("\x1b[2J\x1b[H");
-        printf("stage loading error");
-        free_memory();
-        exit(1);
-    }
+
 
     opening(); // 추가
 
     while (1) { // 추가(게임 무한 루프-왜냐하면 선택지 때문에 )
-    reset_game(); // 추가: 점수랑 스테이지 초기화
-    init_stage();
-    char c = '\0';
-    int game_over = 0;
-    int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
-
-    while (!game_over && stage < max_stages) {
-        if (kbhit()) {
-            c = getchar();
-            if (c == 'q') {
-               restart=0;
-                game_over = 1;
-                continue;
+        reset_game(); // 추가: 점수랑 스테이지 초기화
+        load_maps2();
+        if(maps == NULL){
+            printf("\x1b[2J\x1b[H");
+            printf("stage loading error");
+            free_maps();
+            exit(1);
+        }
+        init_stage();
+        char c = '\0';
+        int game_over = 0;
+        int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
+        printf("\x1b[2J\x1b[H");
+        printf("%d", curr_stage);
+        //exit(0);
+        while (!game_over && curr_stage != -1) {
+            if (kbhit()) {
+                c = getchar();
+                if (c == 'q') {
+                    restart=0;
+                    game_over = 1;
+                    continue;
+                }
+                if (c == '\x1b') {
+                    getchar(); // '['
+                    switch (getchar()) {
+                        case 'A': c = 'w'; break; // Up
+                        case 'B': c = 's'; break; // Down
+                        case 'C': c = 'd'; break; // Right
+                        case 'D': c = 'a'; break; // Left
+                    }
+                }
+            } else {
+                c = '\0';
             }
-            if (c == '\x1b') {
-                getchar(); // '['
-                switch (getchar()) {
-                    case 'A': c = 'w'; break; // Up
-                    case 'B': c = 's'; break; // Down
-                    case 'C': c = 'd'; break; // Right
-                    case 'D': c = 'a'; break; // Left
+            
+            update_game(c);
+            draw_game();
+            usleep(90000);
+            
+            // 추가:
+            // 게임 오버 처리 여기서
+            if (collision_count >= 3) {
+                restart=ending(0);
+                break;
+            }
+            
+            if (maps[player_y][player_x] == 'E') {
+                curr_stage++;
+                load_maps2();
+                if (curr_stage != -1) {
+                    score += 100;
+                    init_stage();
+                } else {
+                    restart = ending(1); // 사용자 선택(r/q) 받기
+                    break;
                 }
             }
-        } else {
-            c = '\0';
         }
-
-        update_game(c);
-        draw_game();
-        usleep(90000);
-            
-        // 추가: 
-            // 게임 오버 처리 여기서
-        if (collision_count >= 3) {
-            restart=ending(0); 
-            break; 
-        }
-
-        if (maps[stage][player_y][player_x] == 'E') {
-           stage++;
-            score += 100;
-            if (stage < max_stages) {
-                init_stage();
-            } else {
-               restart = ending(1); // 사용자 선택(r/q) 받기
-             break; 
-            }
-        }
-    }
-            // 재시작 여부 확인
-        if (restart == 1) 
-        continue; 
+        // 재시작 여부 확인
+        if (restart == 1)
+            continue;
         else
-         break; 
-
-      
+            break;
     }
 
-    free_memory();
+    free_maps();
     disable_raw_mode();
     return 0;
 }
@@ -194,36 +187,13 @@ void enable_raw_mode(void) {
     fclose(file);
 }*/
 
-void make_new_map_size(int max_x, int max_y, int max_z){
-    Map_size *new_map_size = (Map_size *)malloc(sizeof(Map_size));
-    if(new_map_size == NULL){
-        free_map_size(map_size_head);
-        printf("\x1b[2J\x1b[H");
-        printf("메모리 할당 실패");
-        exit(1); //맵 데이터를 받지 않았으므로 바로 종료
-    }
-    new_map_size->max_x = max_x;
-    new_map_size->max_y = max_y;
-    new_map_size->curr_z = max_z;
-    new_map_size->next = NULL;
-    Map_size *temp = map_size_head;
-    if(temp){
-        while(temp -> next){
-            temp = temp->next;
-        }
-        temp->next = new_map_size;
-    }
-    else{
-        map_size_head = new_map_size;
-    }
-}
-void load_maps2(int *ret){
+void load_maps2(void){
     FILE *file = fopen("map.txt", "r");
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
         exit(1);
     }
-
+    free_maps();
     //printf("file x : %d", x);
     //exit(0);
     /*몇 개의 Map이 있는지 세기(max_z)*/
@@ -237,6 +207,13 @@ void load_maps2(int *ret){
                 if(max_y < y){
                     max_y = y;
                 }
+            }
+            else{
+                curr_stage = -1;
+                max_width = 0;
+                max_height = 0;
+                fclose(file);
+                return;
             }
             break;
         }
@@ -255,9 +232,12 @@ void load_maps2(int *ret){
                 if(max_y < y){
                     max_y = y;
                 }
-                make_new_map_size(max_x, max_y, max_z);
-                printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
+                if(max_z >= curr_stage){
+                    break;
+                }
                 max_z++;
+                //make_new_map_size(max_x, max_y, max_z);
+                //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
                 x = y = max_x = max_y = 0;
             }
         }
@@ -266,90 +246,58 @@ void load_maps2(int *ret){
         }
     }
     if(y > 0){
-        make_new_map_size(max_x, max_y, max_z);
-        printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
-        max_z++;
+        max_width = max_x;
+        max_height = max_y;
+        //make_new_map_size(max_x, max_y, max_z);
+        //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
     }
+    printf("\x1b[2J\x1b[H");
+    printf("curr_z : %d, max_x : %d, max_y : %d", curr_stage, max_width, max_height);
+    getchar();
+    int skip_data = 0, skip_until_new_line = 0;
     rewind(file);
-    Map_size * temp = map_size_head;
-    if(temp == NULL){
-        printf("맵 불러오기 실패");
-        return;
-    }
-    maps = (char ***)malloc(sizeof(char **) * max_z);
+    maps = (char **)malloc(sizeof(char *) * max_height);
     if(maps == NULL){
-        free_map_size(map_size_head);
+        fclose(file);
         return;
     }
-    while(temp!= NULL){
-        maps[temp->curr_z]= (char **)malloc(sizeof(char *) * temp->max_y);
-        if(maps[temp->curr_z] == NULL){
-            free_maps(temp->curr_z);
+    for(int ty = 0; ty < max_y; ty++){
+        maps[ty] = (char *)malloc(sizeof(char) * (max_width + 3));
+        if(maps[ty] == NULL){
+            free_maps();
+            fclose(file);
             return;
         }
-        
-        for(int ty = 0; ty < temp-> max_y; ty++){
-            maps[temp->curr_z][ty] = (char *)malloc(sizeof(char) * (temp->max_x + 3));
-            if(maps[temp->curr_z][ty] == NULL){
-                free_maps(temp->curr_z);
-                return;
-            }
-            while(fgets(maps[temp->curr_z][ty], temp->max_x + 3, file) != NULL){
-                char temp_c = maps[temp->curr_z][ty][0];
-                if(!(temp_c == '\n' || temp_c == '\r')){
-                    break;
+        while(fgets(maps[ty], max_width + 3, file) != NULL){
+            char temp_c = maps[ty][0];
+            if(!(temp_c == '\n' || temp_c == '\r')){
+                if(skip_until_new_line == 1){
+                    continue;
                 }
+                if(skip_data < curr_stage){
+                    skip_data++;
+                    skip_until_new_line = 1;
+                    continue;
+                }
+                break;
+            }
+            else if(skip_data > 0){
+                skip_until_new_line = 0;
             }
         }
-        temp = temp->next;
     }
-    *ret = max_z;
+    fclose(file);
 }
-void store_max_x_max_y(int* max_x, int* max_y){
-    Map_size* temp = map_size_head;
-    for(int i = 0; i<stage; i++){
-        temp = temp -> next;
-        if(temp == NULL){
-            printf("\x1b[2J\x1b[H");
-            printf("stage loading error");
-            free_memory();
-            
-            exit(1);
-            
-        }
-    }
-    *max_x = temp->max_x;
-    *max_y = temp->max_y;
-}
-void free_maps(int failed_z){
-    /*
-    for(int z = 0; z<max_stages; z++){
-        stage = z;
-        store_max_x_max_y(&max_width, &max_height);
-        for(int y = 0; y<max_height; y++){
-            free(maps[z][y]);
-        }
-        free(maps[z]);
-    }
-    free(maps);*/
+
+void free_maps(void){
     if(maps != NULL){
-        Map_size *temp = map_size_head;
-        while(temp != NULL && temp -> curr_z < failed_z){
-            if(maps[temp->curr_z] != NULL){
-                for(int j = 0; j < temp->max_y; j++){
-                    if(maps[temp->curr_z][j] != NULL){
-                        free(maps[temp->curr_z][j]);
-                    }
-                    else{
-                        break;
-                    }
-                }
-                free(maps[temp->curr_z]);
+        for(int y = 0; y < max_height; y++){
+            if(maps[y] != NULL){
+                free(maps[y]);
             }
             else{
                 break;
             }
-            temp = temp->next;
         }
         free(maps);
         maps = NULL;
@@ -357,28 +305,15 @@ void free_maps(int failed_z){
     }
 }
 
-
-
-void free_map_size(Map_size *ms){
-    if(ms != NULL){
-        free_map_size(ms ->next);
-    }
-    free(ms);
-}
-void free_memory(void){
-    free_maps(max_stages);
-    free_map_size(map_size_head);
-}
 // 현재 스테이지 초기화
 void init_stage(void) {
     enemy_count = 0;
     coin_count = 0;
     is_jumping = 0;
     velocity_y = 0;
-    store_max_x_max_y(&max_width, &max_height);
     for (int y = 0; y < max_height; y++) {
         for (int x = 0; x < max_width; x++) {
-            char cell = maps[stage][y][x];
+            char cell = maps[y][x];
             if (cell == 'S') {
                 player_x = x;
                 player_y = y;
@@ -396,12 +331,16 @@ void init_stage(void) {
 // 게임 화면 그리기
 void draw_game(void) {
     printf("\x1b[2J\x1b[H");
-    printf("Stage: %d | Score: %d | HEART: %d\n", stage + 1, score, 3 - collision_count);
+    printf("Stage: %d | Score: %d | HEART: %d\n", curr_stage + 1, score, 3 - collision_count);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
+    /*char **display_map = (char **)malloc(sizeof(char *) * max_height);
+    if(display_map == NULL){
+        
+    } 동적배열로 바꿔야하는지 확인 필요*/
     char display_map[max_height][max_width + 1];
     for(int y=0; y < max_height; y++) {
         for(int x=0; x < max_width; x++) {
-            char cell = maps[stage][y][x];
+            char cell = maps[y][x];
             if (cell == 'S' || cell == 'X' || cell == 'C') {
                 display_map[y][x] = ' ';
             } else {
@@ -440,8 +379,8 @@ void update_game(char input) {
 // 플레이어 이동 로직
 void move_player(char input) {
     int next_x = player_x, next_y = player_y;
-    char floor_tile = (player_y + 1 < max_height) ? maps[stage][player_y + 1][player_x] : '#';
-    char current_tile = maps[stage][player_y][player_x];
+    char floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
+    char current_tile = maps[player_y][player_x];
 
     on_ladder = (current_tile == 'H');
 
@@ -449,7 +388,7 @@ void move_player(char input) {
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
-        case 's': if (on_ladder && (player_y + 1 < max_height) && maps[stage][player_y + 1][player_x] != '#') next_y++; break;
+        case 's': if (on_ladder && (player_y + 1 < max_height) && maps[player_y + 1][player_x] != '#') next_y++; break;
         case ' ':
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
@@ -461,16 +400,16 @@ void move_player(char input) {
     
     if (next_x >= 0 &&
         next_x < max_width){
-        if (maps[stage][player_y][next_x] != '#') {
+        if (maps[player_y][next_x] != '#') {
             player_x = next_x;
-            floor_tile = (player_y + 1 < max_height) ? maps[stage][player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
+            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
         }
     }
     
     if (on_ladder && (input == 'w' || input == 's')) {
-        if(next_y >= 0 && next_y < max_height && maps[stage][next_y][player_x] != '#') {
+        if(next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
             player_y = next_y;
-            floor_tile = (player_y + 1 < max_height) ? maps[stage][player_y + 1][player_x] : '#'; //y좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
+            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //y좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
             is_jumping = 0;
             velocity_y = 0;
         }
@@ -483,7 +422,7 @@ void move_player(char input) {
             //수정 후
             if (velocity_y >= 1 && velocity_y <= 3) return;
             if (next_y < max_height){
-                if (maps[stage][next_y][player_x] == '#'){
+                if (maps[next_y][player_x] == '#'){
                     if (velocity_y <= 0){
                         if (!on_ladder){
                             velocity_y = 0;
@@ -521,7 +460,7 @@ void move_player(char input) {
                 }
             }
             */
-            if ((player_y + 1 < max_height) && maps[stage][player_y + 1][player_x] == '#') {
+            if ((player_y + 1 < max_height) && maps[player_y + 1][player_x] == '#') {
                 is_jumping = 0;
                 velocity_y = 0;
             }
@@ -541,7 +480,7 @@ void move_player(char input) {
 void move_enemies(void) {
     for (int i = 0; i < enemy_count; i++) {
         int next_x = enemies[i].x + enemies[i].dir;
-        if (next_x < 0 || next_x >= max_width || maps[stage][enemies[i].y][next_x] == '#' || (enemies[i].y + 1 < max_height && maps[stage][enemies[i].y + 1][next_x] == ' ')) {
+        if (next_x < 0 || next_x >= max_width || maps[enemies[i].y][next_x] == '#' || (enemies[i].y + 1 < max_height && maps[enemies[i].y + 1][next_x] == ' ')) {
             enemies[i].dir *= -1;
         } else {
             enemies[i].x = next_x;
@@ -591,7 +530,7 @@ int kbhit(void) {
 
 // 오프닝 출력 함수
 void opening(void) {
-    printf("\x1b[2J\x1b[H");  // 화면 지우기 
+    printf("\x1b[2J\x1b[H");  // 화면 지우기
     
     printf("\n\n");
     printf("    ##########################################\n");
@@ -613,11 +552,11 @@ int ending(int result) {
     printf("    #                                        #\n");
     
     if (result == 1) {
-        // 게임 클리어 
+        // 게임 클리어
         printf("    #    C O N G R A T U L A T I O N S       #\n");
         printf("    #         ALL STAGES CLEARED!            #\n");
     } else {
-        // 게임 오버 
+        // 게임 오버
         printf("    #          G A M E   O V E R             #\n");
         printf("    #           Try Again ...                #\n");
     }
@@ -641,7 +580,7 @@ int ending(int result) {
    
 }
 void reset_game(void) { // 재시작하면 초기화
-    stage = 0;
+    curr_stage = 0;
     score = 0;
     collision_count = 0;
 }
