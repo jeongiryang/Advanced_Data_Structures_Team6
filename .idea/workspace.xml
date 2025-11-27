@@ -17,11 +17,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="54110679-e9fc-46d3-b690-9bab66d05a5b" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nuguri.c" beforeDir="false" afterPath="$PROJECT_DIR$/nuguri.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nuguri.exe" beforeDir="false" afterPath="$PROJECT_DIR$/nuguri.exe" afterDir="false" />
-    </list>
+    <list default="true" id="54110679-e9fc-46d3-b690-9bab66d05a5b" name="변경" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -67,17 +63,25 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "jisu",
-    "last_opened_file_path": "C:/Users/Jisu/Documents/GitHub/Advanced_Data_Structures_Team6/main.c",
+    "last_opened_file_path": "E:/CWNU_ADS/Advanced_Data_Structures_Team6",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm"
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="C/C++ 파일.nuguri.c">
+  <component name="RunManager" selected="C/C++ 파일.nuguri_TEST.c">
     <configuration name="main.c" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Advanced_Data_Structures_Team6" TARGET_NAME="main.c" CONFIG_NAME="main.c">
       <option name="sourceFile" value="main.c" />
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="nuguri_TEST.c" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Advanced_Data_Structures_Team6" TARGET_NAME="nuguri_TEST.c" CONFIG_NAME="nuguri_TEST.c">
+      <option name="sourceFile" value="nuguri_TEST.c" />
+      <option name="toolchainName" value="Visual Studio" />
       <method v="2">
         <option name="com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask" enabled="true" />
       </method>
@@ -102,7 +106,8 @@
       <workItem from="1764054983818" duration="363000" />
       <workItem from="1764056109068" duration="599000" />
       <workItem from="1764059444046" duration="3614000" />
-      <workItem from="1764157373761" duration="2970000" />
+      <workItem from="1764157373761" duration="4810000" />
+      <workItem from="1764201034280" duration="268000" />
     </task>
     <servers />
   </component>

@@ -1,4 +1,13 @@
-idea
-xml
-pdf
-exe
+.idea/
+.vs/
+
+.env
+.xml
+.iml
+.pdf
+.exe
+.sqlite
+.json
+.ipch
+.vsidx
+.idea/workspace.xml
