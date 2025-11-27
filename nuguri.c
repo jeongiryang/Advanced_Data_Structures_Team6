@@ -1,5 +1,5 @@
 // Windows 보안 경고 무시
-#ifdef _WIN32
+#ifdef __WIN32
 #define _CRT_SECURE_NO_WARNINGS // scanf 보안경고 무시
 #define _CRT_NONSTDC_NO_DEPRECATE // VS환경에서 해더파일안의 내장된 함수 이름들 중복 경고 무시
 #endif
@@ -182,6 +182,8 @@ int main(void) {
     disable_raw_mode();
 #ifdef __WIN32
     if (getch()) return 0;
+#else
+    if (getchar()) return 0;
 #endif
     return 0;
 }
@@ -467,6 +469,13 @@ void draw_game(void) {
         }
         printf("\n");
     }
+
+    //디버깅용 코드 (각종 변수 확인)
+    // printf("\n /// DEBUG MODE /// \n");
+    // printf("Player Pos: maps[%d][%d][%d]\n", stage, player_y, player_x);
+    // printf("collision_count: %d\n", collision_count);
+    // printf("is_jumping: %d, velocity_y: %d\n", is_jumping, velocity_y);
+    // printf("on_ladder: %d\n", on_ladder);
 }
 
 // 게임 상태 업데이트
