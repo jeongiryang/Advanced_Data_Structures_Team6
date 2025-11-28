@@ -83,6 +83,8 @@ void load_maps2(void);
 void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
+void play_death_sound(void);
+void play_nextstage_sound(void);
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
@@ -173,6 +175,7 @@ int main(void) {
 
             if (maps[player_y][player_x] == 'E') {
                 curr_stage++;
+                play_nextstage_sound();
                 load_maps2();
                 if (curr_stage != -1) {
                     score += 100;
@@ -549,6 +552,7 @@ void check_collisions(void) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             collision_count++; // 충돌 횟수 증가
             score = (score > 50) ? score - 50 : 0;
+            play_death_sound();
             init_stage();
             return;
         }
@@ -665,5 +669,28 @@ void play_jump_sound(void) {
 #else
     system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
     fflush(stdout);
+#endif
+}
+
+void play_nextstage_sound(void) {
+    if (curr_stage == 0) return;
+#ifdef __WIN32
+    system("powershell -c \"[Console]::Beep(440, 50)\"");
+    system("powershell -c \"[Console]::Beep(660, 200)\"");
+#elif __linux__
+
+#else
+
+#endif
+}
+
+void play_death_sound(void) {
+#ifdef __WIN32
+    system("powershell -c \"[Console]::Beep(440, 50)\"");
+    system("powershell -c \"[Console]::Beep(330, 200)\"");
+#elif __linux__
+
+#else
+
 #endif
 }
