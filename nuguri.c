@@ -1,5 +1,5 @@
 // Windows 보안 경고 무시
-#ifdef __WIN32
+#ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS // scanf 보안경고 무시
 #define _CRT_NONSTDC_NO_DEPRECATE // VS환경에서 해더파일안의 내장된 함수 이름들 중복 경고 무시
 #endif
@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#ifndef __WIN32
+#ifndef _WIN32
 #include <termios.h>
 #include <fcntl.h>
 #else
@@ -60,7 +60,7 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
-#ifndef __WIN32
+#ifndef _WIN32
 struct termios orig_termios;
 #endif
 // 함수 선언
@@ -88,7 +88,7 @@ void play_nextstage_sound(void);
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
-#ifdef __WIN32
+#ifdef _WIN32
     system("cls");
     // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
     SetConsoleOutputCP(CP_UTF8);
@@ -128,7 +128,7 @@ int main(void) {
         //exit(0);
         while (!game_over && curr_stage != -1) {
             if (kbhit()) {
-#ifndef __WIN32
+#ifndef _WIN32
                 c = getchar();
 #else
                 c = getch();
@@ -138,7 +138,7 @@ int main(void) {
                     game_over = 1;
                     continue;
                 }
-#ifndef __WIN32
+#ifndef _WIN32
                 if (c == '\x1b') {
                     getchar(); // '['
                     switch (getchar()) {
@@ -160,8 +160,8 @@ int main(void) {
 
             update_game(c);
             draw_game();
-#ifndef __WIN32
-            usleep(90000);
+#ifndef _WIN32
+            usleep(90000); // 90000 마이크로 초 == 90ms
 #else
             Sleep(90);
 #endif
@@ -201,12 +201,12 @@ int main(void) {
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode(void) {
-    #ifndef __WIN32
+    #ifndef _WIN32
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     #endif
 }
 void enable_raw_mode(void) {
-#ifndef __WIN32
+#ifndef _WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -307,7 +307,7 @@ void load_maps2(void){
     }
     clrscr();
     printf("curr_z : %d, max_x : %d, max_y : %d", curr_stage, max_width, max_height);
-#ifndef __WIN32
+#ifndef _WIN32
     getchar();
 #else
     getch();
@@ -566,7 +566,7 @@ void check_collisions(void) {
 }
 
 // 비동기 키보드 입력 확인
-#ifndef __WIN32
+#ifndef _WIN32
 int kbhit(void) {
     struct termios oldt, newt;
     int ch;
@@ -603,7 +603,7 @@ void opening(void) {
     printf("    #                                        #\n");
     printf("    ##########################################\n");
     printf("\n");
-#ifndef __WIN32
+#ifndef _WIN32
     getchar();
 #else
     getch();
@@ -638,7 +638,7 @@ int ending(int result) {
    // 추가: 입력대기
     while(1) {
         char c
-#ifndef __WIN32
+#ifndef _WIN32
         = getchar();
 #else
         = getch();
@@ -657,7 +657,7 @@ void reset_game(void) { // 재시작하면 초기화
 
 // 점프 효과음
 void play_jump_sound(void) {
-#ifdef __WIN32
+#ifdef _WIN32
     system("powershell -c \"[Console]::Beep(440, 90)\"");
     //windows powershell 명령어 사용. 440Hz (4옥타브 라)의 소리를 90ms동안 출력한다
     // 근데 이게 ASync가 아니라서 게임에 딜레이가 생기는 문제가 있음
@@ -674,7 +674,7 @@ void play_jump_sound(void) {
 
 void play_nextstage_sound(void) {
     if (curr_stage == 0) return;
-#ifdef __WIN32
+#ifdef _WIN32
     system("powershell -c \"[Console]::Beep(440, 50)\"");
     system("powershell -c \"[Console]::Beep(660, 200)\"");
 #elif __linux__
@@ -685,7 +685,7 @@ void play_nextstage_sound(void) {
 }
 
 void play_death_sound(void) {
-#ifdef __WIN32
+#ifdef _WIN32
     system("powershell -c \"[Console]::Beep(440, 50)\"");
     system("powershell -c \"[Console]::Beep(330, 200)\"");
 #elif __linux__
