@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
 
 #ifndef __WIN32
+#include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
 #else
@@ -28,7 +28,7 @@
 // 구조체 정의
 typedef struct {
     int x, y;
-    int dir; // 1: right, -1: left
+    int dir; 
 } Enemy;
 
 typedef struct {
@@ -39,7 +39,7 @@ typedef struct {
 
 
 // 전역 변수
-char **maps = NULL; //추가
+char **maps = NULL; 
 int curr_stage = 0;
 int max_height = 0;
 int max_width = 0;
@@ -126,25 +126,20 @@ int main(void) {
         //exit(0);
         while (!game_over && curr_stage != -1) {
             if (kbhit()) {
-#ifndef __WIN32
+            #ifndef __WIN32
                 c = getchar();
-#else
+            #else
                 c = getch();
-#endif
+            #endif
                 if (c == 'q') {
                     restart=0;
                     game_over = 1;
                     continue;
                 }
-#ifndef __WIN32
+            #ifndef _WIN32
                 if (c == '\x1b') {
                     getchar(); // '['
                     switch (getchar()) {
-#else
-                if (c == 27) {
-                    getch(); // '['
-                    switch (getch()) {
-#endif
                         case 'A': c = 'w'; break; // Up
                         case 'B': c = 's'; break; // Down
                         case 'C': c = 'd'; break; // Right
@@ -152,17 +147,29 @@ int main(void) {
                         default: break;
                     }
                 }
+            #else
+                if (c == -32 || c == 224) {  // Windows 방향키 시작 코드
+                    c = getch();  // 실제 방향키 코드 읽기
+                    switch (c) {
+                        case 72: c = 'w'; break; // Up
+                        case 80: c = 's'; break; // Down
+                        case 77: c = 'd'; break; // Right
+                        case 75: c = 'a'; break; // Left
+                        default: break;
+                    }
+                }
+            #endif
             } else {
                 c = '\0';
             }
 
             update_game(c);
             draw_game();
-#ifndef __WIN32
+        #ifndef __WIN32
             usleep(90000);
-#else
+        #else
             Sleep(9);
-#endif
+        #endif
 
             // 추가:
             // 게임 오버 처리 여기서
@@ -634,11 +641,11 @@ int ending(int result) {
    // 추가: 입력대기
     while(1) {
         char c
-#ifndef __WIN32
+    #ifndef __WIN32
         = getchar();
-#else
+    #else
         = getch();
-#endif
+    #endif
         if (c == 'r' || c == 'R') return 1;
         else if (c == 'q' || c == 'Q') return 0;
     }
