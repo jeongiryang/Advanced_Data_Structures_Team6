@@ -84,6 +84,17 @@ void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
 
+#ifdef _WIN32
+void init_console_utf8(void) {
+    static int first = 1;
+    if (first) {
+        SetConsoleOutputCP(CP_UTF8);
+        SetConsoleCP(CP_UTF8);
+        first = 0;
+    }
+}
+#endif
+
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
 #ifdef __WIN32
@@ -103,13 +114,26 @@ void clrscr(void) {
 
 int main(void) {
     srand((unsigned)time(NULL));
+
+    #ifdef _WIN32
+    init_console_utf8();  
+    // 커서 숨기기
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(hConsole, &cursorInfo);
+    cursorInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hConsole, &cursorInfo);
+    #else
+    printf("\x1b[?25l"); // 커서 숨기기
+    fflush(stdout);
+    #endif
     enable_raw_mode();
 
 
-    opening(); // 추가
+    opening(); 
 
-    while (1) { // 추가(게임 무한 루프-왜냐하면 선택지 때문에 )
-        reset_game(); // 추가: 점수랑 스테이지 초기화
+    while (1) { // (게임 무한 루프-왜냐하면 선택지 때문에 )
+        reset_game(); // 점수랑 스테이지 초기화
         load_maps2();
         if(maps == NULL){
             clrscr();
@@ -123,20 +147,19 @@ int main(void) {
         int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
         clrscr();
         printf("%d", curr_stage);
-        //exit(0);
         while (!game_over && curr_stage != -1) {
             if (kbhit()) {
-            #ifndef __WIN32
+    #ifndef _WIN32
                 c = getchar();
-            #else
+    #else
                 c = getch();
-            #endif
+    #endif
                 if (c == 'q') {
                     restart=0;
                     game_over = 1;
                     continue;
                 }
-            #ifndef _WIN32
+        #ifndef _WIN32
                 if (c == '\x1b') {
                     getchar(); // '['
                     switch (getchar()) {
@@ -147,7 +170,7 @@ int main(void) {
                         default: break;
                     }
                 }
-            #else
+        #else
                 if (c == -32 || c == 224) {  // Windows 방향키 시작 코드
                     c = getch();  // 실제 방향키 코드 읽기
                     switch (c) {
@@ -158,20 +181,19 @@ int main(void) {
                         default: break;
                     }
                 }
-            #endif
+        #endif
             } else {
                 c = '\0';
             }
 
             update_game(c);
             draw_game();
-        #ifndef __WIN32
+        #ifndef _WIN32
             usleep(90000);
         #else
-            Sleep(9);
+            Sleep(90); 
         #endif
 
-            // 추가:
             // 게임 오버 처리 여기서
             if (collision_count >= 3) {
                 restart=ending(0);
