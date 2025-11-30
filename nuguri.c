@@ -414,40 +414,45 @@ void init_stage(void) {
 
 // 게임 화면 그리기
 void draw_game(void) {
-    clrscr();
+    printf("\x1b[H");
     printf("Stage: %d | Score: %d | HEART: %d\n", curr_stage + 1, score, 3 - collision_count);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
-    /*char **display_map = (char **)malloc(sizeof(char *) * max_height);
-    if(display_map == NULL){
 
-    } 동적배열로 바꿔야하는지 확인 필요*/
-    char display_map[max_height][max_width + 1];
-    for(int y=0; y < max_height; y++) {
-        for(int x=0; x < max_width; x++) {
-            char cell = maps[y][x];
-            if (cell == 'S' || cell == 'X' || cell == 'C') {
-                display_map[y][x] = ' ';
-            } else {
-                display_map[y][x] = cell;
-            }
-        }
-    }
-
-    for (int i = 0; i < coin_count; i++) {
-        if (!coins[i].collected) {
-            display_map[coins[i].y][coins[i].x] = 'C';
-        }
-    }
-
-    for (int i = 0; i < enemy_count; i++) {
-        display_map[enemies[i].y][enemies[i].x] = 'X';
-    }
-
-    display_map[player_y][player_x] = 'P';
-
+    int isCoin, isEnemy;
+    
     for (int y = 0; y < max_height; y++) {
-        for(int x=0; x< max_width; x++){
-            printf("%c", display_map[y][x]);
+        for (int x = 0; x < max_width; x++) {
+            isCoin = isEnemy = 0;
+            if (x == player_x && y == player_y) {
+                printf("%c", 'P');
+                continue;
+            }
+            for (int i = 0; i < coin_count; i++) {
+                if (!coins[i].collected && y == coins[i].y && x == coins[i].x) {
+                    isCoin = 1;
+                    break;
+                }
+            }
+            if (isCoin == 1) { 
+                printf("%c", 'C'); 
+                continue; 
+            }
+            for (int i = 0; i < enemy_count; i++) {
+                if (y == enemies[i].y && x == enemies[i].x) {
+                    isEnemy = 1;
+                    break;
+                }
+            }
+            if (isEnemy) {
+                printf("%c", 'X');
+                continue;
+            }
+            if (maps[y][x] == 'S' || maps[y][x] == 'X' || maps[y][x] == 'C') {
+                printf("%c", ' ');
+            }
+            else {
+                printf("%c", maps[y][x]);
+            }
         }
         printf("\n");
     }
