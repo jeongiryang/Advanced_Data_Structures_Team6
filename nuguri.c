@@ -588,9 +588,12 @@ void reset_game(void) {
 void play_jump_sound(void) {
 #ifdef _WIN32
     Beep(800, 10); // 20ms -> 10ms 
+#elif defined(__APPLE__)
+    Beep(800, 100);
+    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &");
 #else
-    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); 
-#endif
+    // Linux - ANSI bell
+    printf("\a");
     fflush(stdout);
+#endif
 }
-
