@@ -299,11 +299,11 @@ void load_maps3(FILE *file) {
         return;
     }
     free_maps();
-    int x = 0, y = 0, max_x = 0, max_y = 0, data_count = 0;
+    long long int data_count = ftell(file);
+    int x = 0, y = 0, max_x = 0, max_y = 0;
     char ch;
     while (1) {
         ch = fgetc(file);
-        data_count++;
         if (ch == EOF) {
             if (y > 0) {
                 if (max_y < y) {
@@ -345,7 +345,7 @@ void load_maps3(FILE *file) {
         max_height = max_y;
 
     }
-
+    data_count = ftell(file) - data_count;
     fseek(file, -1 * data_count, SEEK_CUR);
     maps = (char**)malloc(sizeof(char*) * max_height);
     if (maps == NULL) {
