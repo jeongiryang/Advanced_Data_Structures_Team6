@@ -28,7 +28,7 @@
 // 구조체 정의
 typedef struct {
     int x, y;
-    int dir; 
+    int dir;
 } Enemy;
 
 typedef struct {
@@ -39,7 +39,7 @@ typedef struct {
 
 
 // 전역 변수
-char **maps = NULL; 
+char **maps = NULL;
 int curr_stage = 0;
 int max_height = 0;
 int max_width = 0;
@@ -79,7 +79,7 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
-void load_maps2(void);
+void load_maps3(FILE *);
 void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
@@ -116,7 +116,7 @@ int main(void) {
     srand((unsigned)time(NULL));
 
     #ifdef _WIN32
-    init_console_utf8();  
+    init_console_utf8();
     // 커서 숨기기
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
@@ -130,14 +130,15 @@ int main(void) {
     enable_raw_mode();
 
 
-    opening(); 
-
+    opening();
+    FILE* file = fopen("map.txt", "r");
     while (1) { // (게임 무한 루프-왜냐하면 선택지 때문에 )
         reset_game(); // 점수랑 스테이지 초기화
-        load_maps2();
+        load_maps3(file);
         if(maps == NULL){
             clrscr();
             printf("stage loading error");
+            fclose(file);
             free_maps();
             exit(1);
         }
@@ -191,7 +192,7 @@ int main(void) {
         #ifndef _WIN32
             usleep(90000);
         #else
-            Sleep(90); 
+            Sleep(90);
         #endif
 
             // 게임 오버 처리 여기서
@@ -202,7 +203,7 @@ int main(void) {
 
             if (maps[player_y][player_x] == 'E') {
                 curr_stage++;
-                load_maps2();
+                load_maps3(file);
                 if (curr_stage != -1) {
                     score += 100;
                     init_stage();
@@ -213,12 +214,15 @@ int main(void) {
             }
         }
         // 재시작 여부 확인
-        if (restart == 1)
+        if (restart == 1){
+            rewind(file);
             continue;
-        else
+        }
+        else{
             break;
+        }
     }
-
+    fclose(file);
     free_maps();
     disable_raw_mode();
     return 0;
@@ -267,111 +271,83 @@ void enable_raw_mode(void) {
     fclose(file);
 }*/
 
-void load_maps2(void){
-    FILE *file = fopen("map.txt", "r");
+void load_maps3(FILE *file) {
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
-        exit(1);
+        return;
     }
     free_maps();
-    //printf("file x : %d", x);
-    //exit(0);
-    /*몇 개의 Map이 있는지 세기(max_z)*/
-
-    int x = 0, y = 0, max_x = 0, max_y = 0, max_z = 0;
+    int x = 0, y = 0, max_x = 0, max_y = 0, data_count = 0;
     char ch;
-    while(1){
+    while (1) {
         ch = fgetc(file);
-        if(ch == EOF){
-            if(y > 0){
-                if(max_y < y){
+        data_count++;
+        if (ch == EOF) {
+            if (y > 0) {
+                if (max_y < y) {
                     max_y = y;
                 }
             }
-            else{
+            else {
                 curr_stage = -1;
                 max_width = 0;
                 max_height = 0;
-                fclose(file);
                 return;
             }
             break;
         }
-        else if(ch == '\n'){
-            if(y == 0 && x == 0){
+        else if (ch == '\n') {
+            if (y == 0 && x == 0) {
                 continue;
             }
-            if(x > 0){
+            if (x > 0) {
                 y++;
-                if(max_x < x){
+                if (max_x < x) {
                     max_x = x;
                 }
                 x = 0;
             }
-            else{
-                if(max_y < y){
+            else {
+                if (max_y < y) {
                     max_y = y;
-                }
-                if(max_z >= curr_stage){
-                    break;
-                }
-                max_z++;
-                //make_new_map_size(max_x, max_y, max_z);
-                //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
-                x = y = max_x = max_y = 0;
-            }
-        }
-        else if(ch != '\r'){
-            x++;
-        }
-    }
-    if(y > 0){
-        max_width = max_x;
-        max_height = max_y;
-        //make_new_map_size(max_x, max_y, max_z);
-        //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
-    }
-    clrscr();
-    printf("curr_z : %d, max_x : %d, max_y : %d", curr_stage, max_width, max_height);
-#ifndef __WIN32
-    getchar();
-#else
-    getch();
-#endif
-    int skip_data = 0, skip_until_new_line = 0;
-    rewind(file);
-    maps = (char **)malloc(sizeof(char *) * max_height);
-    if(maps == NULL){
-        fclose(file);
-        return;
-    }
-    for(int ty = 0; ty < max_y; ty++){
-        maps[ty] = (char *)malloc(sizeof(char) * (max_width + 3));
-        if(maps[ty] == NULL){
-            free_maps();
-            fclose(file);
-            return;
-        }
-        while(fgets(maps[ty], max_width + 3, file) != NULL){
-            char temp_c = maps[ty][0];
-            if(!(temp_c == '\n' || temp_c == '\r')){
-                if(skip_until_new_line == 1){
-                    continue;
-                }
-                if(skip_data < curr_stage){
-                    skip_data++;
-                    skip_until_new_line = 1;
-                    continue;
                 }
                 break;
             }
-            else if(skip_data > 0){
-                skip_until_new_line = 0;
+        }
+        else if (ch != '\r') {
+            x++;
+        }
+    }
+    if (y > 0) {
+        max_width = max_x;
+        max_height = max_y;
+
+    }
+
+    fseek(file, -1 * data_count, SEEK_CUR);
+    maps = (char**)malloc(sizeof(char*) * max_height);
+    if (maps == NULL) {
+        return;
+    }
+    clrscr();
+    for (int ty = 0; ty < max_y; ty++) {
+        maps[ty] = (char*)malloc(sizeof(char) * (max_width + 3));
+        if (maps[ty] == NULL) {
+            free_maps();
+            return;
+        }
+        
+        while (fgets(maps[ty], max_width + 3, file) != NULL) {
+            char temp_c = maps[ty][0];
+            if (!(temp_c == '\n' || temp_c == '\r')) {
+                break;
             }
         }
     }
-    fclose(file);
+    
+
 }
+
 
 void free_maps(void){
     if(maps != NULL){
@@ -433,9 +409,9 @@ void draw_game(void) {
                     break;
                 }
             }
-            if (isCoin == 1) { 
-                printf("%c", 'C'); 
-                continue; 
+            if (isCoin == 1) {
+                printf("%c", 'C');
+                continue;
             }
             for (int i = 0; i < enemy_count; i++) {
                 if (y == enemies[i].y && x == enemies[i].x) {
@@ -475,21 +451,21 @@ void move_player(char input) {
     on_ladder = (current_tile == 'H');
 
     switch (input) {
-        case 'a': next_x--; break;
-        case 'd': next_x++; break;
-        case 'w': if (on_ladder) next_y--; break;
-        case 's': if (on_ladder && (player_y + 1 < max_height) && maps[player_y + 1][player_x] != '#') next_y++; break;
-        case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
-                is_jumping = 1;
-                velocity_y = -3;
-                play_jump_sound();
-            }
-            break;
+    case 'a': next_x--; break;
+    case 'd': next_x++; break;
+    case 'w': if (on_ladder) next_y--; break;
+    case 's': if (on_ladder && (player_y + 1 < max_height) && maps[player_y + 1][player_x] != '#') next_y++; break;
+    case ' ':
+        if (!is_jumping && (floor_tile == '#' || on_ladder)) {
+            is_jumping = 1;
+            velocity_y = -3;
+            play_jump_sound();
+        }
+        break;
     }
 
     if (next_x >= 0 &&
-        next_x < max_width){
+        next_x < max_width) {
         if (maps[player_y][next_x] != '#') {
             player_x = next_x;
             floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
@@ -497,7 +473,7 @@ void move_player(char input) {
     }
 
     if (on_ladder && (input == 'w' || input == 's')) {
-        if(next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
+        if (next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
             player_y = next_y;
             floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //y좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
             is_jumping = 0;
@@ -507,57 +483,40 @@ void move_player(char input) {
     else {
         if (is_jumping) {
             next_y = player_y + ((velocity_y >= 3) ? 1 : -1);
-            if(next_y < 0) next_y = 0;
+            if (next_y < 0) next_y = 0;
             velocity_y++;
             //수정 후
             if (velocity_y >= 1 && velocity_y <= 3) return;
-            if (next_y < max_height){
-                if (maps[next_y][player_x] == '#'){
-                    if (velocity_y <= 0){
-                        if (!on_ladder){
+            if (next_y < max_height) {
+                if (maps[next_y][player_x] == '#') {
+                    if (velocity_y <= 0) {
+                        if (!on_ladder) {
                             velocity_y = 0;
-                        }else if(velocity_y<=-2){
-                            player_y = next_y-1;
-                            is_jumping = 0;
                         }
-                    } else if (velocity_y > 0){
+                        else if (velocity_y <= -2) {
+                            if(next_y - 1 >= 0 && maps[next_y - 1][player_x] != '#'){
+                                player_y = next_y - 1;
+                                is_jumping = 0;
+                            }
+                        }
+                    }
+                    else if (velocity_y > 0) {
                         is_jumping = 0;
                     }
                 }
-                else{
+                else {
                     player_y = next_y;
                 }
             }
-            /* 수정 전
-             if (velocity_y <= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#' && !on_ladder) {
-                velocity_y = 0;
-            } else if (velocity_y > 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#'){
-                is_jumping = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                if(on_ladder){
-                    if (map[stage][next_y][player_x] == '#'){
-                        if(velocity_y<=-2){
-                            player_y = next_y-1;
-                            is_jumping = 0;
-                        }
-                    }
-                    else{
-                        player_y = next_y;
-                    }
-                }
-                else{
-                    player_y = next_y;
-                }
-            }
-            */
             if ((player_y + 1 < max_height) && maps[player_y + 1][player_x] == '#') {
                 is_jumping = 0;
                 velocity_y = 0;
             }
-        } else {
+        }
+        else {
             if (floor_tile != '#' && floor_tile != 'H' && !on_ladder) {
-                 if (player_y + 1 < max_height) player_y++;
-                 else init_stage();
+                if (player_y + 1 < max_height) player_y++;
+                else init_stage();
             }
         }
     }
@@ -668,11 +627,10 @@ int ending(int result) {
 
    // 추가: 입력대기
     while(1) {
-        char c
     #ifndef __WIN32
-        = getchar();
+        char c = getchar();
     #else
-        = getch();
+        char c = getch();
     #endif
         if (c == 'r' || c == 'R') return 1;
         else if (c == 'q' || c == 'Q') return 0;
