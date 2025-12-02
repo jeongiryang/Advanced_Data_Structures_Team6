@@ -60,7 +60,7 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
-#ifndef __WIN32
+#ifndef _WIN32
 struct termios orig_termios;
 #endif
 // 함수 선언
@@ -111,11 +111,10 @@ void enable_ansi(void) { // 윈도우에서 ANSI 이스케이프 시퀀스를 �
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
-#ifdef _WIN32
-    system("cls");
+    //system("cls");
     // system(<명령어>); 함수 -- 윈도우의 cmd에서 <명령어>를 실행했을 때의 결과를 반영한다.
     // 즉, system("cls");는 cmd에서 cls 명령어 -- "화면 전체 지우기"를 실행한다.
-#else
+
     printf("\x1b[2J\x1b[H");
     // \x1b : ESCAPE (27을 Hexadecimal로 변환해 1b)
     // 2J : 2 Page 만큼 화면 지우기
@@ -134,7 +133,6 @@ void clrscr(void) {
     // <열>;<행>H : 주어진 열, 행 위치로 커서이동 (0, 0)
     // J : 화면 지우기 (1)
     // K : 현재 줄 지우기 (1)
-#endif
 }
 
 int main(void) {
@@ -142,6 +140,7 @@ int main(void) {
 
 #ifdef _WIN32
     init_console_utf8();
+    enable_ansi();
     // 커서 숨기기
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
