@@ -454,6 +454,7 @@ void draw_game(void) {
                 printf("%c", maps[y][x]);
             }
         }
+        
         printf("\n");
     }
 }
