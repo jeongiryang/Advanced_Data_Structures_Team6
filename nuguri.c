@@ -1,5 +1,5 @@
 // Windows 보안 경고 무시
-#ifdef __WIN32
+#ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS // scanf 보안경고 무시
 #define _CRT_NONSTDC_NO_DEPRECATE // VS환경에서 해더파일안의 내장된 함수 이름들 중복 경고 무시
 #endif
@@ -9,7 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-#ifndef __WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -60,7 +60,7 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
-#ifndef __WIN32
+#ifndef _WIN32
 struct termios orig_termios;
 #endif
 // 함수 선언
@@ -97,7 +97,7 @@ void init_console_utf8(void) {
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
-#ifdef __WIN32
+#ifdef _WIN32
     system("cls");
     // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
     SetConsoleOutputCP(CP_UTF8);
@@ -231,12 +231,12 @@ int main(void) {
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode(void) {
-    #ifndef __WIN32
+    #ifndef _WIN32
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     #endif
 }
 void enable_raw_mode(void) {
-#ifndef __WIN32
+#ifndef _WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -556,7 +556,7 @@ void check_collisions(void) {
 }
 
 // 비동기 키보드 입력 확인
-#ifndef __WIN32
+#ifndef _WIN32
 int kbhit(void) {
     struct termios oldt, newt;
     int ch;
@@ -593,7 +593,7 @@ void opening(void) {
     printf("    #                                        #\n");
     printf("    ##########################################\n");
     printf("\n");
-#ifndef __WIN32
+#ifndef _WIN32
     getchar();
 #else
     getch();
@@ -627,7 +627,7 @@ int ending(int result) {
 
    // 추가: 입력대기
     while(1) {
-    #ifndef __WIN32
+    #ifndef _WIN32
         char c = getchar();
     #else
         char c = getch();
@@ -646,6 +646,8 @@ void reset_game(void) { // 재시작하면 초기화
 
 // 점프 효과음
 void play_jump_sound(void) {
+#ifndef _WIN32
     system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
+#endif
     fflush(stdout);
 }
