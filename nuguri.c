@@ -243,8 +243,17 @@ int main(void) {
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode(void) {
-    #ifndef _WIN32
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    // [정이량] Windows 커서 복구 및 매크로 수정
+    #ifdef _WIN32
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_CURSOR_INFO cursorInfo;
+        GetConsoleCursorInfo(hConsole, &cursorInfo);
+        cursorInfo.bVisible = TRUE;
+        SetConsoleCursorInfo(hConsole, &cursorInfo);
+    #else
+        printf("\x1b[?25h");
+        fflush(stdout);
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     #endif
 }
 void enable_raw_mode(void) {
