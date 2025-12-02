@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
 
 #ifndef _WIN32
 #include <termios.h>
+#include <unistd.h>
 #include <fcntl.h>
 #else
 #include <windows.h>
@@ -39,7 +39,7 @@ typedef struct {
 
 
 // 전역 변수
-char **maps = NULL; //추가
+char **maps = NULL;
 int curr_stage = 0;
 int max_height = 0;
 int max_width = 0;
@@ -60,7 +60,7 @@ Coin coins[MAX_COINS];
 int coin_count = 0;
 
 // 터미널 설정
-#ifndef _WIN32
+#ifndef __WIN32
 struct termios orig_termios;
 #endif
 // 함수 선언
@@ -83,35 +83,82 @@ void load_maps2(void);
 void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
-void play_death_sound(void);
-void play_nextstage_sound(void);
+
+#ifdef _WIN32
+void init_console_utf8(void) {
+    static int first = 1;
+    if (first) {
+        SetConsoleOutputCP(CP_UTF8);
+        SetConsoleCP(CP_UTF8);
+        //콘솔을 UTF-8 포맷으로 출력하게 한다. 이 과정이 없으면, 한글과 특수문자 등등 ASCII 밖 and UNICODE 안 범위의 글자들이 깨지게 된다.
+        first = 0;
+    }
+}
+void enable_ansi(void) { // 윈도우에서 ANSI 이스케이프 시퀀스를 사용하기 위한 함수
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // 표준 입력 핸들을 가져오기
+    DWORD dwMode = 0;
+    GetConsoleMode(hConsole, &dwMode); // dwMode : 0 -> 3
+    // 앞전 과제에서 termios.h 헤더에 정의된 터미널 구조체를 사용했던 것처럼 (struct termios oldt, newt;)
+    // 여기서는 windows.h 헤더에 정의된 unsigned long타입의 dwMode 변수와 HANDLE 포인터의 hConsole 변수를 선언, 그리고 초기화를 하며
+    // unsigned long, 즉 정수형 변수 dwMode가 '플래그'가 되어 cmd의 각종 설정을 제어하게 된다.
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING; // dwMode : 3 -> 7
+    // 가상화 터미널 처리 플래그를 추가한다.(비트 연산으로) 따라서 기존의 cmd 설정에 가상화 터미널 처리 기능이 활성화되어 윈도우에서도 ANSI 이스케이프 시퀀스를 사용할 수 있다.
+    // * ENABLE_VIRTUAL_TERMINAL_PROCESSING 플래그 값 = 4
+    SetConsoleMode(hConsole, dwMode);
+    // 변경된 설정을 적용한다.
+}
+#endif
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
 #ifdef _WIN32
     system("cls");
-    // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-    //콘솔을 UTF-8 포맷으로 출력하게 한다. 이 과정이 없으면, 한글과 특수문자 등등 ASCII 밖 and UNICODE 안 범위의 글자들이 깨지게 된다.
+    // system(<명령어>); 함수 -- 윈도우의 cmd에서 <명령어>를 실행했을 때의 결과를 반영한다.
+    // 즉, system("cls");는 cmd에서 cls 명령어 -- "화면 전체 지우기"를 실행한다.
 #else
     printf("\x1b[2J\x1b[H");
-    // \x1b : ESCAPE
+    // \x1b : ESCAPE (27을 Hexadecimal로 변환해 1b)
     // 2J : 2 Page 만큼 화면 지우기
-    // ANSI 이스케이프 명령에 대해 세부조사를 해봤는데 2J 자체가 화면 비우기를 의미하는게 아니라
-    // 화면 비우기 명령은 J고, 앞에 2는 지울 페이지 수였음
+    //
+    // ANSI 이스케이프 시퀀스 명령어 목록:
+    // <숫자><알파벳> 형태이며, <숫자>만큼 <알파벳>명령을 실행한다.
+    // 설명 맨 끝의 괄호는 <숫자> 의 기본값을 나타낸다
+    //
+    // A : 커서를 위로 (1)
+    // B : 커서를 아래로 (1)
+    // C : 커서를 왼쪽으로 (1)
+    // D : 커서를 오른쪽으로 (1)
+    // E : 다음 줄 (1)
+    // F : 이전 줄 (1)
+    // G : 현재 줄 내에서 커서를 <숫자>번째 위치로 (0)
+    // <열>;<행>H : 주어진 열, 행 위치로 커서이동 (0, 0)
+    // J : 화면 지우기 (1)
+    // K : 현재 줄 지우기 (1)
 #endif
 }
 
 int main(void) {
     srand((unsigned)time(NULL));
+
+#ifdef _WIN32
+    init_console_utf8();
+    // 커서 숨기기
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(hConsole, &cursorInfo);
+    cursorInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hConsole, &cursorInfo);
+#else
+    printf("\x1b[?25l"); // 커서 숨기기
+    fflush(stdout);
+#endif
     enable_raw_mode();
 
 
-    opening(); // 추가
+    opening();  // 추가
 
-    while (1) { // 추가(게임 무한 루프-왜냐하면 선택지 때문에 )
-        reset_game(); // 추가: 점수랑 스테이지 초기화
+    while (1) { // (게임 무한 루프-왜냐하면 선택지 때문에 )
+        reset_game(); // 점수랑 스테이지 초기화
         load_maps2();
         if(maps == NULL){
             clrscr();
@@ -125,28 +172,22 @@ int main(void) {
         int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
         clrscr();
         printf("%d", curr_stage);
-        //exit(0);
         while (!game_over && curr_stage != -1) {
             if (kbhit()) {
-#ifndef _WIN32
+    #ifndef _WIN32
                 c = getchar();
-#else
+    #else
                 c = getch();
-#endif
+    #endif
                 if (c == 'q') {
                     restart=0;
                     game_over = 1;
                     continue;
                 }
-#ifndef _WIN32
+        #ifndef _WIN32
                 if (c == '\x1b') {
                     getchar(); // '['
                     switch (getchar()) {
-#else
-                if (c == 27) {
-                    getch(); // '['
-                    switch (getch()) {
-#endif
                         case 'A': c = 'w'; break; // Up
                         case 'B': c = 's'; break; // Down
                         case 'C': c = 'd'; break; // Right
@@ -154,19 +195,30 @@ int main(void) {
                         default: break;
                     }
                 }
+        #else
+                if (c == -32 || c == 224) {  // Windows 방향키 시작 코드
+                    c = getch();  // 실제 방향키 코드 읽기
+                    switch (c) {
+                        case 72: c = 'w'; break; // Up
+                        case 80: c = 's'; break; // Down
+                        case 77: c = 'd'; break; // Right
+                        case 75: c = 'a'; break; // Left
+                        default: break;
+                    }
+                }
+        #endif
             } else {
                 c = '\0';
             }
 
             update_game(c);
             draw_game();
-#ifndef _WIN32
-            usleep(90000); // 90000 마이크로 초 == 90ms
-#else
+        #ifndef _WIN32
+            usleep(90000);
+        #else
             Sleep(90);
-#endif
+        #endif
 
-            // 추가:
             // 게임 오버 처리 여기서
             if (collision_count >= 3) {
                 restart=ending(0);
@@ -175,7 +227,6 @@ int main(void) {
 
             if (maps[player_y][player_x] == 'E') {
                 curr_stage++;
-                play_nextstage_sound();
                 load_maps2();
                 if (curr_stage != -1) {
                     score += 100;
@@ -552,7 +603,6 @@ void check_collisions(void) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             collision_count++; // 충돌 횟수 증가
             score = (score > 50) ? score - 50 : 0;
-            play_death_sound();
             init_stage();
             return;
         }
@@ -658,16 +708,14 @@ void reset_game(void) { // 재시작하면 초기화
 // 점프 효과음
 void play_jump_sound(void) {
 #ifdef _WIN32
-    system("powershell -c \"[Console]::Beep(440, 90)\"");
-    //windows powershell 명령어 사용. 440Hz (4옥타브 라)의 소리를 90ms동안 출력한다
-    // 근데 이게 ASync가 아니라서 게임에 딜레이가 생기는 문제가 있음
+    Beep(440, 45);
     fflush(stdout);
-#elif __linux__
-    printf("\007");
-    // ASCII 코드 7번 BELL (작동여부 확인 필요)
+#elif __APPLE__
+    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
     fflush(stdout);
 #else
-    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
+    printf("\007");
+    // ASCII 코드 7번 BELL (작동여부 확인 필요)
     fflush(stdout);
 #endif
 }
@@ -675,20 +723,9 @@ void play_jump_sound(void) {
 void play_nextstage_sound(void) {
     if (curr_stage == 0) return;
 #ifdef _WIN32
-    system("powershell -c \"[Console]::Beep(440, 50)\"");
-    system("powershell -c \"[Console]::Beep(660, 200)\"");
-#elif __linux__
-
-#else
-
-#endif
-}
-
-void play_death_sound(void) {
-#ifdef _WIN32
-    system("powershell -c \"[Console]::Beep(440, 50)\"");
-    system("powershell -c \"[Console]::Beep(330, 200)\"");
-#elif __linux__
+    Beep(440, 45);
+    Beep(660, 135);
+#elif __APPLE__
 
 #else
 
