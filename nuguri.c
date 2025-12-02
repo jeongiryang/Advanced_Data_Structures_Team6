@@ -8,13 +8,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
+
+
 
 // [정이량] 헤더 및 OS 판별 매크로 수정
 #ifndef _WIN32
 #include <termios.h>
 #include <fcntl.h>
+#include <unistd.h>
 #else
 #include <windows.h>
 #include <conio.h>
@@ -30,7 +32,7 @@
 // 구조체 정의
 typedef struct {
     int x, y;
-    int dir; // 1: right, -1: left
+    int dir;
 } Enemy;
 
 typedef struct {
@@ -82,7 +84,7 @@ void move_player(char input);
 void move_enemies(void);
 void check_collisions(void);
 int kbhit(void);
-void load_maps2(void);
+void load_maps3(FILE *);
 void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
@@ -101,8 +103,19 @@ void init_console_utf8(void) {
 
 // 변경: 화면 지우는 기능을 단순 printf ANSI 이스케이프 시퀀스에서 함수로 변경. 디아블로, makepic에 있던 그것과 동일
 void clrscr(void) {
-    // [정이량] 화면 지우기 방식 개선 (깜빡임 최소화)
+#ifdef _WIN32
+    system("cls");
+    // 혹시라도 내부적으로 어떻게 작동하는지 여쭤보신다면 -- 그냥 cmd에서 치는 명령어들 쓰는거임. cmd에서도 cls 치면 화면 다 비워짐
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+    //콘솔을 UTF-8 포맷으로 출력하게 한다. 이 과정이 없으면, 한글과 특수문자 등등 ASCII 밖 and UNICODE 안 범위의 글자들이 깨지게 된다.
+#else
     printf("\x1b[2J\x1b[H");
+    // \x1b : ESCAPE
+    // 2J : 2 Page 만큼 화면 지우기
+    // ANSI 이스케이프 명령에 대해 세부조사를 해봤는데 2J 자체가 화면 비우기를 의미하는게 아니라
+    // 화면 비우기 명령은 J고, 앞에 2는 지울 페이지 수였음
+#endif
 }
 
 int main(void) {
@@ -120,18 +133,19 @@ int main(void) {
     printf("\x1b[?25l"); // 커서 숨기기
     fflush(stdout);
     #endif
-    
     enable_raw_mode();
 
 
-    opening(); // 추가
 
-    while (1) { // 추가(게임 무한 루프-왜냐하면 선택지 때문에 )
-        reset_game(); // 추가: 점수랑 스테이지 초기화
-        load_maps2();
+    opening();
+    FILE* file = fopen("map.txt", "r");
+    while (1) { // (게임 무한 루프-왜냐하면 선택지 때문에 )
+        reset_game(); // 점수랑 스테이지 초기화
+        load_maps3(file);
         if(maps == NULL){
             clrscr();
             printf("stage loading error");
+            fclose(file);
             free_maps();
             exit(1);
         }
@@ -141,30 +155,24 @@ int main(void) {
         int restart=0; // 재시작 여부 변수 (1: 재시작, 0: 종료)
         clrscr();
         printf("%d", curr_stage);
-        //exit(0);
+
         while (!game_over && curr_stage != -1) {
             if (kbhit()) {
-// [정이량] 매크로 수정
-#ifndef _WIN32
+    #ifndef _WIN32
                 c = getchar();
-#else
+    #else
                 c = getch();
-#endif
+    #endif
                 if (c == 'q') {
                     restart=0;
                     game_over = 1;
                     continue;
                 }
-// [정이량] 매크로 수정
-#ifndef _WIN32
+
+        #ifndef _WIN32
                 if (c == '\x1b') {
                     getchar(); // '['
                     switch (getchar()) {
-#else
-                if (c == 27) {
-                    getch(); // '['
-                    switch (getch()) {
-#endif
                         case 'A': c = 'w'; break; // Up
                         case 'B': c = 's'; break; // Down
                         case 'C': c = 'd'; break; // Right
@@ -172,6 +180,18 @@ int main(void) {
                         default: break;
                     }
                 }
+        #else
+                if (c == -32 || c == 224) {  // Windows 방향키 시작 코드
+                    c = getch();  // 실제 방향키 코드 읽기
+                    switch (c) {
+                        case 72: c = 'w'; break; // Up
+                        case 80: c = 's'; break; // Down
+                        case 77: c = 'd'; break; // Right
+                        case 75: c = 'a'; break; // Left
+                        default: break;
+                    }
+                }
+        #endif
             } else {
                 c = '\0';
             }
@@ -185,7 +205,7 @@ int main(void) {
             Sleep(90);
 #endif
 
-            // 추가:
+
             // 게임 오버 처리 여기서
             if (collision_count >= 3) {
                 restart=ending(0);
@@ -194,7 +214,7 @@ int main(void) {
 
             if (maps[player_y][player_x] == 'E') {
                 curr_stage++;
-                load_maps2();
+                load_maps3(file);
                 if (curr_stage != -1) {
                     score += 100;
                     init_stage();
@@ -205,12 +225,16 @@ int main(void) {
             }
         }
         // 재시작 여부 확인
-        if (restart == 1)
-            continue;
-        else
-            break;
-    }
 
+        if (restart == 1){
+            rewind(file);
+            continue;
+        }
+        else{
+            break;
+        }
+    }
+    fclose(file);
     free_maps();
     disable_raw_mode();
     return 0;
@@ -219,28 +243,12 @@ int main(void) {
 
 // 터미널 Raw 모드 활성화/비활성화
 void disable_raw_mode(void) {
-// [정이량] Windows 커서 복구 및 매크로 수정
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(hConsole, &cursorInfo);
-    cursorInfo.bVisible = TRUE;
-    SetConsoleCursorInfo(hConsole, &cursorInfo);
-#else
-    printf("\x1b[?25h"); 
-    fflush(stdout);
+    #ifndef _WIN32
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-#endif
+    #endif
 }
 void enable_raw_mode(void) {
-// [정이량] Windows 콘솔 입력 모드 설정 및 매크로 수정
-#ifdef _WIN32
-    HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD mode;
-    GetConsoleMode(hInput, &mode);
-    mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
-    SetConsoleMode(hInput, mode);
-#else
+#ifndef _WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
     struct termios raw = orig_termios;
@@ -275,112 +283,84 @@ void enable_raw_mode(void) {
     fclose(file);
 }*/
 
-void load_maps2(void){
-    FILE *file = fopen("map.txt", "r");
+
+void load_maps3(FILE *file) {
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
-        exit(1);
+        return;
     }
     free_maps();
-    //printf("file x : %d", x);
-    //exit(0);
-    /*몇 개의 Map이 있는지 세기(max_z)*/
-
-    int x = 0, y = 0, max_x = 0, max_y = 0, max_z = 0;
+    int x = 0, y = 0, max_x = 0, max_y = 0, data_count = 0;
     char ch;
-    while(1){
+    while (1) {
         ch = fgetc(file);
-        if(ch == EOF){
-            if(y > 0){
-                if(max_y < y){
+        data_count++;
+        if (ch == EOF) {
+            if (y > 0) {
+                if (max_y < y) {
                     max_y = y;
                 }
             }
-            else{
+            else {
                 curr_stage = -1;
                 max_width = 0;
                 max_height = 0;
-                fclose(file);
                 return;
             }
             break;
         }
-        else if(ch == '\n'){
-            if(y == 0 && x == 0){
+        else if (ch == '\n') {
+            if (y == 0 && x == 0) {
                 continue;
             }
-            if(x > 0){
+            if (x > 0) {
                 y++;
-                if(max_x < x){
+                if (max_x < x) {
                     max_x = x;
                 }
                 x = 0;
             }
-            else{
-                if(max_y < y){
+            else {
+                if (max_y < y) {
                     max_y = y;
-                }
-                if(max_z >= curr_stage){
-                    break;
-                }
-                max_z++;
-                //make_new_map_size(max_x, max_y, max_z);
-                //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
-                x = y = max_x = max_y = 0;
-            }
-        }
-        else if(ch != '\r'){
-            x++;
-        }
-    }
-    if(y > 0){
-        max_width = max_x;
-        max_height = max_y;
-        //make_new_map_size(max_x, max_y, max_z);
-        //printf("max_x : %d, max_y : %d, max_z : %d\n", max_x, max_y, max_z);
-    }
-    clrscr();
-    printf("curr_z : %d, max_x : %d, max_y : %d", curr_stage, max_width, max_height);
-// [정이량] 매크로 수정
-#ifndef _WIN32
-    getchar();
-#else
-    getch();
-#endif
-    int skip_data = 0, skip_until_new_line = 0;
-    rewind(file);
-    maps = (char **)malloc(sizeof(char *) * max_height);
-    if(maps == NULL){
-        fclose(file);
-        return;
-    }
-    for(int ty = 0; ty < max_y; ty++){
-        maps[ty] = (char *)malloc(sizeof(char) * (max_width + 3));
-        if(maps[ty] == NULL){
-            free_maps();
-            fclose(file);
-            return;
-        }
-        while(fgets(maps[ty], max_width + 3, file) != NULL){
-            char temp_c = maps[ty][0];
-            if(!(temp_c == '\n' || temp_c == '\r')){
-                if(skip_until_new_line == 1){
-                    continue;
-                }
-                if(skip_data < curr_stage){
-                    skip_data++;
-                    skip_until_new_line = 1;
-                    continue;
                 }
                 break;
             }
-            else if(skip_data > 0){
-                skip_until_new_line = 0;
+        }
+        else if (ch != '\r') {
+            x++;
+        }
+    }
+    if (y > 0) {
+        max_width = max_x;
+        max_height = max_y;
+
+    }
+
+    fseek(file, -1 * data_count, SEEK_CUR);
+    maps = (char**)malloc(sizeof(char*) * max_height);
+    if (maps == NULL) {
+        return;
+    }
+    clrscr();
+    for (int ty = 0; ty < max_y; ty++) {
+        maps[ty] = (char*)malloc(sizeof(char) * (max_width + 3));
+        if (maps[ty] == NULL) {
+            free_maps();
+            return;
+        }
+        
+        while (fgets(maps[ty], max_width + 3, file) != NULL) {
+            char temp_c = maps[ty][0];
+            if (!(temp_c == '\n' || temp_c == '\r')) {
+                break;
             }
         }
     }
-    fclose(file);
+    
+
 }
+
 
 void free_maps(void){
     if(maps != NULL){
@@ -423,41 +403,47 @@ void init_stage(void) {
 
 // 게임 화면 그리기
 void draw_game(void) {
-    clrscr();
+    printf("\x1b[H");
     printf("Stage: %d | Score: %d | HEART: %d\n", curr_stage + 1, score, 3 - collision_count);
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
-    /*char **display_map = (char **)malloc(sizeof(char *) * max_height);
-    if(display_map == NULL){
 
-    } 동적배열로 바꿔야하는지 확인 필요*/
-    char display_map[max_height][max_width + 1];
-    for(int y=0; y < max_height; y++) {
-        for(int x=0; x < max_width; x++) {
-            char cell = maps[y][x];
-            if (cell == 'S' || cell == 'X' || cell == 'C') {
-                display_map[y][x] = ' ';
-            } else {
-                display_map[y][x] = cell;
+    int isCoin, isEnemy;
+    
+    for (int y = 0; y < max_height; y++) {
+        for (int x = 0; x < max_width; x++) {
+            isCoin = isEnemy = 0;
+            if (x == player_x && y == player_y) {
+                printf("%c", 'P');
+                continue;
+            }
+            for (int i = 0; i < coin_count; i++) {
+                if (!coins[i].collected && y == coins[i].y && x == coins[i].x) {
+                    isCoin = 1;
+                    break;
+                }
+            }
+            if (isCoin == 1) {
+                printf("%c", 'C');
+                continue;
+            }
+            for (int i = 0; i < enemy_count; i++) {
+                if (y == enemies[i].y && x == enemies[i].x) {
+                    isEnemy = 1;
+                    break;
+                }
+            }
+            if (isEnemy) {
+                printf("%c", 'X');
+                continue;
+            }
+            if (maps[y][x] == 'S' || maps[y][x] == 'X' || maps[y][x] == 'C') {
+                printf("%c", ' ');
+            }
+            else {
+                printf("%c", maps[y][x]);
             }
         }
-    }
-
-    for (int i = 0; i < coin_count; i++) {
-        if (!coins[i].collected) {
-            display_map[coins[i].y][coins[i].x] = 'C';
-        }
-    }
-
-    for (int i = 0; i < enemy_count; i++) {
-        display_map[enemies[i].y][enemies[i].x] = 'X';
-    }
-
-    display_map[player_y][player_x] = 'P';
-
-    for (int y = 0; y < max_height; y++) {
-        for(int x=0; x< max_width; x++){
-            printf("%c", display_map[y][x]);
-        }
+        
         printf("\n");
     }
 }
@@ -478,6 +464,7 @@ void move_player(char input) {
     on_ladder = (current_tile == 'H');
 
     switch (input) {
+
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
@@ -492,7 +479,7 @@ void move_player(char input) {
     }
 
     if (next_x >= 0 &&
-        next_x < max_width){
+        next_x < max_width) {
         if (maps[player_y][next_x] != '#') {
             player_x = next_x;
             floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //x좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
@@ -500,7 +487,7 @@ void move_player(char input) {
     }
 
     if (on_ladder && (input == 'w' || input == 's')) {
-        if(next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
+        if (next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
             player_y = next_y;
             floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; //y좌표가 변경된 후 floor_tile값도 변경 필요(!is_jumping일 때)
             is_jumping = 0;
@@ -510,57 +497,40 @@ void move_player(char input) {
     else {
         if (is_jumping) {
             next_y = player_y + ((velocity_y >= 3) ? 1 : -1);
-            if(next_y < 0) next_y = 0;
+            if (next_y < 0) next_y = 0;
             velocity_y++;
             //수정 후
             if (velocity_y >= 1 && velocity_y <= 3) return;
-            if (next_y < max_height){
-                if (maps[next_y][player_x] == '#'){
-                    if (velocity_y <= 0){
-                        if (!on_ladder){
+            if (next_y < max_height) {
+                if (maps[next_y][player_x] == '#') {
+                    if (velocity_y <= 0) {
+                        if (!on_ladder) {
                             velocity_y = 0;
-                        }else if(velocity_y<=-2){
-                            player_y = next_y-1;
-                            is_jumping = 0;
                         }
-                    } else if (velocity_y > 0){
+                        else if (velocity_y <= -2) {
+                            if(next_y - 1 >= 0 && maps[next_y - 1][player_x] != '#'){
+                                player_y = next_y - 1;
+                                is_jumping = 0;
+                            }
+                        }
+                    }
+                    else if (velocity_y > 0) {
                         is_jumping = 0;
                     }
                 }
-                else{
+                else {
                     player_y = next_y;
                 }
             }
-            /* 수정 전
-             if (velocity_y <= 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#' && !on_ladder) {
-                velocity_y = 0;
-            } else if (velocity_y > 0 && next_y < MAP_HEIGHT && map[stage][next_y][player_x] == '#'){
-                is_jumping = 0;
-            } else if (next_y < MAP_HEIGHT) {
-                if(on_ladder){
-                    if (map[stage][next_y][player_x] == '#'){
-                        if(velocity_y<=-2){
-                            player_y = next_y-1;
-                            is_jumping = 0;
-                        }
-                    }
-                    else{
-                        player_y = next_y;
-                    }
-                }
-                else{
-                    player_y = next_y;
-                }
-            }
-            */
             if ((player_y + 1 < max_height) && maps[player_y + 1][player_x] == '#') {
                 is_jumping = 0;
                 velocity_y = 0;
             }
-        } else {
+        }
+        else {
             if (floor_tile != '#' && floor_tile != 'H' && !on_ladder) {
-                 if (player_y + 1 < max_height) player_y++;
-                 else init_stage();
+                if (player_y + 1 < max_height) player_y++;
+                else init_stage();
             }
         }
     }
@@ -643,6 +613,7 @@ void opening(void) {
     printf("    ##########################################\n");
     printf("\n");
 // [정이량] 매크로 수정
+
 #ifndef _WIN32
     getchar();
 #else
@@ -662,7 +633,7 @@ int ending(int result) {
         printf("    #         ALL STAGES CLEARED!            #\n");
     } else {
         // 게임 오버
-        printf("    #           G A M E   O V E R            #\n");
+        printf("    #          G A M E   O V E R             #\n");
         printf("    #           Try Again ...                #\n");
     }
 
@@ -677,13 +648,11 @@ int ending(int result) {
 
    // 추가: 입력대기
     while(1) {
-        char c
-// [정이량] 매크로 수정
-#ifndef _WIN32
-        = getchar();
-#else
-        = getch();
-#endif
+    #ifndef _WIN32
+        char c = getchar();
+    #else
+        char c = getch();
+    #endif
         if (c == 'r' || c == 'R') return 1;
         else if (c == 'q' || c == 'Q') return 0;
     }
@@ -706,3 +675,4 @@ void play_jump_sound(void) {
 #endif
     fflush(stdout);
 }
+
