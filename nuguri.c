@@ -346,7 +346,7 @@ void load_maps3(FILE *file) {
 
     }
 
-    fseek(file, -1 * data_count, SEEK_CUR);
+    rewind(file);
     maps = (char**)malloc(sizeof(char*) * max_height);
     if (maps == NULL) {
         return;
@@ -679,9 +679,11 @@ void play_jump_sound(void) {
 // [정이량] Windows Beep 추가
 #ifdef _WIN32
     Beep(800, 100);
+#elif defined(__APPLE__)
+    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &");
 #else
-    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); //mac 버전 stdlib.h 사용
-#endif
+    // Linux - ANSI bell
+    printf("\a");
     fflush(stdout);
+#endif
 }
-
