@@ -81,8 +81,24 @@ void load_maps3(FILE *);
 void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
+void play_nextstage_sound(void);
+void play_death_sound(void);
 
 // Windows 콘솔 UTF-8 설정 함수 (원래 여기 있었으나 불필요해서 제거)
+#ifdef _WIN32
+void enable_ansi(void) { // 윈도우 10에서 ANSI 이스케이프 시퀀스를 사용하기 위한 함수
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hConsole, &dwMode); // dwMode : 0 -> 3
+    // 앞전 과제에서 termios.h 헤더에 정의된 터미널 구조체를 사용했던 것처럼 (struct termios oldt, newt;)
+    // 여기서는 windows.h 헤더에 정의된 unsigned long타입의 dwMode 변수와 HANDLE 포인터의 hConsole 변수를 선언, 그리고 초기화를 하며
+    // unsigned long, 즉 정수형 변수 dwMode가 '플래그'가 되어 cmd의 각종 설정을 제어하게 된다.
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING; // dwMode : 3 -> 7
+    // 가상화 터미널 처리 플래그를 추가한다.(비트 연산으로) 따라서 기존의 cmd 설정에 가상화 터미널 처리 기능이 활성화되어 윈도우에서도 ANSI 이스케이프 시퀀스를 사용할 수 있다.
+    // * ENABLE_VIRTUAL_TERMINAL_PROCESSING 플래그 값 = 4
+    SetConsoleMode(hConsole, dwMode);
+}
+#endif
 
 // 화면 지우기 방식 개선 (화면 전체 지우기 제거 후 커서 이동 -> 깜빡임/윈도우 버벅거림 최소화)
 void clrscr(void) {
@@ -91,15 +107,15 @@ void clrscr(void) {
 
 int main(void) {
     srand((unsigned)time(NULL));
-    
     #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
+    enable_ansi();
     #endif
 
     enable_raw_mode();
 
     opening();
-    
+
     // 초기 잔상 제거
     printf("\x1b[2J\x1b[H");
 
@@ -172,7 +188,7 @@ int main(void) {
 
             update_game(c);
             draw_game();
-            
+
             // 윈도우 버벅거림 해결: 20ms (약 50 FPS)로 설정하여 점프를 더 빠르고 부드럽게 만듦
 #ifndef _WIN32
             usleep(90000);
@@ -186,6 +202,7 @@ int main(void) {
             }
 
             if (maps[player_y][player_x] == 'E') {
+                play_nextstage_sound();
                 curr_stage++;
                 load_maps3(file);
                 if (curr_stage != -1) {
@@ -227,8 +244,8 @@ void enable_raw_mode(void) {
     // Windows 콘솔 초기화 및 커서 숨김
     printf("\x1b[?25l");
     fflush(stdout);
-    
-    
+
+
 #ifndef _WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
@@ -285,7 +302,7 @@ void load_maps3(FILE *file) {
     fseek(file, -1 * data_count, SEEK_CUR);
     maps = (char**)malloc(sizeof(char*) * max_height);
     if (maps == NULL) return;
-    
+
     clrscr();
     for (int ty = 0; ty < max_y; ty++) {
         maps[ty] = (char*)malloc(sizeof(char) * (max_width + 3));
@@ -340,7 +357,7 @@ void draw_game(void) {
     printf("조작: ← → (이동), ↑ ↓ (사다리), Space (점프), q (종료)\n");
 
     int isCoin, isEnemy;
-    
+
     for (int y = 0; y < max_height; y++) {
         for (int x = 0; x < max_width; x++) {
             isCoin = isEnemy = 0;
@@ -420,7 +437,7 @@ void move_player(char input) {
             if(next_y >= 0 && next_y < max_height){
                 player_y = next_y;
             }
-            
+
         }
         else{
             next_y = player_y + (next_y - player_y)*2;
@@ -482,6 +499,7 @@ void move_enemies(void) {
 void check_collisions(void) {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
+            play_death_sound();
             collision_count++;
             score = (score > 50) ? score - 50 : 0;
             init_stage();
@@ -578,6 +596,30 @@ void reset_game(void) {
 void play_jump_sound(void) {
 #ifdef _WIN32
     Beep(800, 10); // 20ms -> 10ms
+#else
+    // Apple, Linux - ANSI bell
+    printf("\a");
+    fflush(stdout);
+#endif
+}
+
+void play_nextstage_sound(void) {
+#ifdef _WIN32
+    Beep(440, 50);
+    Beep(660, 150);
+#else
+    // Apple, Linux - ANSI bell
+    printf("\a");
+    fflush(stdout);
+#endif
+}
+
+void play_death_sound(void) {
+#ifdef _WIN32
+    Beep(220, 100);
+    Beep(220, 100);
+    Beep(220, 100);
+    Sleep(50);
 #else
     // Apple, Linux - ANSI bell
     printf("\a");
