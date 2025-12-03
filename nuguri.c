@@ -82,17 +82,7 @@ void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
 
-// Windows 콘솔 UTF-8 설정 함수
-#ifdef _WIN32
-void init_console_utf8(void) {
-    static int first = 1;
-    if (first) {
-        SetConsoleOutputCP(CP_UTF8);
-        SetConsoleCP(CP_UTF8);
-        first = 0;
-    }
-}
-#endif
+// Windows 콘솔 UTF-8 설정 함수 (원래 여기 있었으나 불필요해서 제거)
 
 // 화면 지우기 방식 개선 (화면 전체 지우기 제거 후 커서 이동 -> 깜빡임/윈도우 버벅거림 최소화)
 void clrscr(void) {
@@ -102,6 +92,10 @@ void clrscr(void) {
 int main(void) {
     srand((unsigned)time(NULL));
     
+    #ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
+    #endif
+
     enable_raw_mode();
 
     opening();
