@@ -1,8 +1,8 @@
 // Windows 보안 경고 무시
 // 매크로 표준화 변경
 #ifdef _WIN32
-#define _CRT_SECURE_NO_WARNINGS 
-#define _CRT_NONSTDC_NO_DEPRECATE 
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
 #endif
 
 #include <stdio.h>
@@ -21,8 +21,8 @@
 #endif
 
 // 맵 및 게임 요소 정의
-#define MAX_ENEMIES 15 
-#define MAX_COINS 30   
+#define MAX_ENEMIES 15
+#define MAX_COINS 30
 
 // 구조체 정의
 typedef struct {
@@ -36,13 +36,13 @@ typedef struct {
 } Coin;
 
 // 전역 변수
-char **maps = NULL; 
+char **maps = NULL;
 int curr_stage = 0;
 int max_height = 0;
 int max_width = 0;
 int player_x, player_y;
 int score = 0;
-int collision_count = 0; 
+int collision_count = 0;
 
 // 플레이어 상태
 int is_jumping = 0;
@@ -62,11 +62,11 @@ struct termios orig_termios;
 #endif
 
 // 함수 선언
-void opening(void); 
-int ending(int result); 
-void reset_game(void); 
+void opening(void);
+int ending(int result);
+void reset_game(void);
 
-void check_is_null(void *); 
+void check_is_null(void *);
 void disable_raw_mode(void);
 void enable_raw_mode(void);
 void load_maps(void);
@@ -82,17 +82,7 @@ void init_stage(void) ;
 void free_maps(void);
 void play_jump_sound(void);
 
-// Windows 콘솔 UTF-8 설정 함수
-#ifdef _WIN32
-void init_console_utf8(void) {
-    static int first = 1;
-    if (first) {
-        SetConsoleOutputCP(CP_UTF8);
-        SetConsoleCP(CP_UTF8);
-        first = 0;
-    }
-}
-#endif
+// Windows 콘솔 UTF-8 설정 함수 (원래 여기 있었으나 불필요해서 제거)
 
 // 화면 지우기 방식 개선 (화면 전체 지우기 제거 후 커서 이동 -> 깜빡임/윈도우 버벅거림 최소화)
 void clrscr(void) {
@@ -102,18 +92,10 @@ void clrscr(void) {
 int main(void) {
     srand((unsigned)time(NULL));
     
-    // Windows 콘솔 초기화 및 커서 숨김
     #ifdef _WIN32
-    init_console_utf8();
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(hConsole, &cursorInfo);
-    cursorInfo.bVisible = FALSE;
-    SetConsoleCursorInfo(hConsole, &cursorInfo);
-    #else
-    printf("\x1b[?25l"); 
-    fflush(stdout);
+    SetConsoleOutputCP(CP_UTF8);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
     #endif
+
     enable_raw_mode();
 
     opening();
@@ -121,14 +103,14 @@ int main(void) {
     // 초기 잔상 제거
     printf("\x1b[2J\x1b[H");
 
-    FILE* file = fopen("map.txt", "r");
-    if (!file) { 
+    FILE* file = fopen("map.txt", "rb");
+    if (!file) {
         printf("map.txt error");
         exit(1);
     }
 
-    while (1) { 
-        reset_game(); 
+    while (1) {
+        reset_game();
         load_maps3(file);
         if(maps == NULL){
             clrscr();
@@ -140,10 +122,10 @@ int main(void) {
         init_stage();
         char c = '\0';
         int game_over = 0;
-        int restart=0; 
+        int restart=0;
         
         // 스테이지 전환 잔상 제거
-        printf("\x1b[2J\x1b[H"); 
+        printf("\x1b[2J\x1b[H");
         
         clrscr();
         printf("%d", curr_stage);
@@ -163,23 +145,23 @@ int main(void) {
 
         #ifndef _WIN32
                 if (c == '\x1b') {
-                    getchar(); 
+                    getchar();
                     switch (getchar()) {
-                        case 'A': c = 'w'; break; 
-                        case 'B': c = 's'; break; 
-                        case 'C': c = 'd'; break; 
-                        case 'D': c = 'a'; break; 
+                        case 'A': c = 'w'; break;
+                        case 'B': c = 's'; break;
+                        case 'C': c = 'd'; break;
+                        case 'D': c = 'a'; break;
                         default: break;
                     }
                 }
         #else
-                if (c == -32 || c == 224) { 
-                    c = getch(); 
+                if (c == -32 || c == 224) {
+                    c = getch();
                     switch (c) {
-                        case 72: c = 'w'; break; 
-                        case 80: c = 's'; break; 
-                        case 77: c = 'd'; break; 
-                        case 75: c = 'a'; break; 
+                        case 72: c = 'w'; break;
+                        case 80: c = 's'; break;
+                        case 77: c = 'd'; break;
+                        case 75: c = 'a'; break;
                         default: break;
                     }
                 }
@@ -193,9 +175,9 @@ int main(void) {
             
             // 윈도우 버벅거림 해결: 20ms (약 50 FPS)로 설정하여 점프를 더 빠르고 부드럽게 만듦
 #ifndef _WIN32
-            usleep(20000);
+            usleep(90000);
 #else
-            Sleep(20); // 기존 90ms -> 20ms (게임 속도 및 반응성 향상)
+            Sleep(90); // 기존 90ms -> 20ms (게임 속도 및 반응성 향상)
 #endif
 
             if (collision_count >= 3) {
@@ -212,7 +194,7 @@ int main(void) {
                     // 다음 스테이지 잔상 제거
                     printf("\x1b[2J\x1b[H");
                 } else {
-                    restart = ending(1); 
+                    restart = ending(1);
                     break;
                 }
             }
@@ -234,20 +216,19 @@ int main(void) {
 
 void disable_raw_mode(void) {
     // Windows 커서 복구 및 매크로 수정
-    #ifdef _WIN32
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_CURSOR_INFO cursorInfo;
-        GetConsoleCursorInfo(hConsole, &cursorInfo);
-        cursorInfo.bVisible = TRUE;
-        SetConsoleCursorInfo(hConsole, &cursorInfo);
-    #else
-        printf("\x1b[?25h");
-        fflush(stdout);
+    printf("\x1b[?25h");
+    fflush(stdout);
+    #ifndef _WIN32
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
     #endif
 }
 
 void enable_raw_mode(void) {
+    // Windows 콘솔 초기화 및 커서 숨김
+    printf("\x1b[?25l");
+    fflush(stdout);
+    
+    
 #ifndef _WIN32
     tcgetattr(STDIN_FILENO, &orig_termios);
     atexit(disable_raw_mode);
@@ -318,6 +299,7 @@ void load_maps3(FILE *file) {
         }
     }
 }
+
 
 void free_maps(void){
     if(maps != NULL){
@@ -412,10 +394,11 @@ void move_player(char input) {
     on_ladder = (current_tile == 'H');
 
     switch (input) {
+
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
-        case 's': if (on_ladder && (player_y + 1 < max_height) && maps[player_y + 1][player_x] != '#') next_y++; break;
+        case 's': if (on_ladder && (player_y + 1 < max_height)) next_y++; break;
         case ' ':
             if (!is_jumping && (floor_tile == '#' || on_ladder)) {
                 is_jumping = 1;
@@ -428,17 +411,26 @@ void move_player(char input) {
     if (next_x >= 0 && next_x < max_width) {
         if (maps[player_y][next_x] != '#') {
             player_x = next_x;
-            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; 
+            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
         }
     }
 
     if (on_ladder && (input == 'w' || input == 's')) {
-        if (next_y >= 0 && next_y < max_height && maps[next_y][player_x] != '#') {
-            player_y = next_y;
-            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#'; 
-            is_jumping = 0;
-            velocity_y = 0;
+        if (maps[next_y][player_x] != '#') {
+            if(next_y >= 0 && next_y < max_height){
+                player_y = next_y;
+            }
+            
         }
+        else{
+            next_y = player_y + (next_y - player_y)*2;
+            if(next_y >= 0 && next_y < max_height){
+                player_y = next_y;
+            }
+        }
+        floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
+        is_jumping = 0;
+        velocity_y = 0;
     }
     else {
         if (is_jumping) {
@@ -450,12 +442,12 @@ void move_player(char input) {
                 if (maps[next_y][player_x] == '#') {
                     if (velocity_y <= 0) {
                         if (!on_ladder) velocity_y = 0;
-                        else if (velocity_y <= -2) {
+                        /*else if (velocity_y <= -2) {
                             if(next_y - 1 >= 0 && maps[next_y - 1][player_x] != '#'){
                                 player_y = next_y - 1;
                                 is_jumping = 0;
                             }
-                        }
+                        }//점프로 사다리 올라가기 대신 화살표키로 변경. 위아래 가능*/
                     }
                     else if (velocity_y > 0) is_jumping = 0;
                 }
@@ -465,7 +457,8 @@ void move_player(char input) {
                 is_jumping = 0;
                 velocity_y = 0;
             }
-        } else {
+        }
+        else {
             if (floor_tile != '#' && floor_tile != 'H' && !on_ladder) {
                 if (player_y + 1 < max_height) player_y++;
                 else init_stage();
@@ -526,7 +519,7 @@ int kbhit(void) {
 
 void opening(void) {
     // 화면 잔상 제거
-    printf("\x1b[2J\x1b[H"); 
+    printf("\x1b[2J\x1b[H");
     printf("\n\n");
     printf("    ##########################################\n");
     printf("    #                                        #\n");
@@ -546,7 +539,7 @@ void opening(void) {
 
 int ending(int result) {
     // 화면 잔상 제거
-    printf("\x1b[2J\x1b[H"); 
+    printf("\x1b[2J\x1b[H");
     printf("\n\n");
     printf("    ##########################################\n");
     printf("    #                                        #\n");
@@ -584,9 +577,10 @@ void reset_game(void) {
 // 점프 효과음 (윈도우 버벅거림 해결: 재생 시간 10ms로 더 단축)
 void play_jump_sound(void) {
 #ifdef _WIN32
-    Beep(800, 10); // 20ms -> 10ms 
+    Beep(800, 10); // 20ms -> 10ms
 #else
-    system("afplay /System/Library/Sounds/Tink.aiff > /dev/null 2>&1 &"); 
-#endif
+    // Apple, Linux - ANSI bell
+    printf("\a");
     fflush(stdout);
+#endif
 }
