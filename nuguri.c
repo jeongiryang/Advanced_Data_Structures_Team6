@@ -102,9 +102,12 @@ void enable_ansi(void) { // 윈도우 10에서 ANSI 이스케이프 시퀀스를
 
 // 화면 지우기 방식 개선 (화면 전체 지우기 제거 후 커서 이동 -> 깜빡임/윈도우 버벅거림 최소화)
 void clrscr(void) {
-    printf("\x1b[H");
+    printf("\x1b[2Jx1b[H");
 }
 
+void gotofirst(void){
+    printf("\x1b[H");
+}
 int main(void) {
     srand((unsigned)time(NULL));
     #ifdef _WIN32
@@ -117,7 +120,7 @@ int main(void) {
     opening();
 
     // 초기 잔상 제거
-    printf("\x1b[2J\x1b[H");
+    clrscr();
 
     FILE* file = fopen("map.txt", "rb");
     if (!file) {
@@ -129,7 +132,7 @@ int main(void) {
         reset_game();
         load_maps3(file);
         if(maps == NULL){
-            clrscr();
+            gotofirst();
             printf("stage loading error");
             if(file) fclose(file);
             free_maps();
@@ -141,9 +144,9 @@ int main(void) {
         int restart=0;
         
         // 스테이지 전환 잔상 제거
-        printf("\x1b[2J\x1b[H");
-        
         clrscr();
+        
+        gotofirst();
         printf("%d", curr_stage);
 
         while (!game_over && curr_stage != -1) {
@@ -158,7 +161,6 @@ int main(void) {
                     game_over = 1;
                     continue;
                 }
-
         #ifndef _WIN32
                 if (c == '\x1b') {
                     getchar();
@@ -209,7 +211,7 @@ int main(void) {
                     score += 100;
                     init_stage();
                     // 다음 스테이지 잔상 제거
-                    printf("\x1b[2J\x1b[H");
+                    clrscr();
                 } else {
                     restart = ending(1);
                     break;
@@ -303,7 +305,7 @@ void load_maps3(FILE *file) {
     maps = (char**)malloc(sizeof(char*) * max_height);
     if (maps == NULL) return;
 
-    clrscr();
+    gotofirst();
     for (int ty = 0; ty < max_y; ty++) {
         maps[ty] = (char*)malloc(sizeof(char) * (max_width + 3));
         if (maps[ty] == NULL) {
@@ -415,9 +417,9 @@ void move_player(char input) {
         case 'a': next_x--; break;
         case 'd': next_x++; break;
         case 'w': if (on_ladder) next_y--; break;
-        case 's': if (on_ladder && (player_y + 1 < max_height)) next_y++; break;
+        case 's': if (player_y + 1 < max_height) next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder)) {
+            if (!is_jumping && (floor_tile == '#' || on_ladder || floor_tile)) {
                 is_jumping = 1;
                 velocity_y = -3;
                 play_jump_sound();
@@ -432,22 +434,29 @@ void move_player(char input) {
         }
     }
 
-    if (on_ladder && (input == 'w' || input == 's')) {
-        if (maps[next_y][player_x] != '#') {
-            if(next_y >= 0 && next_y < max_height){
-                player_y = next_y;
+    if (input == 'w' || input == 's') {
+        if(on_ladder){
+            if (maps[next_y][player_x] != '#') {
+                if((next_y >= 0 && next_y < max_height)){
+                    player_y = next_y;
+                }
+                
             }
-
+            else if(input == 'w'){
+                next_y = player_y + (next_y - player_y)*2;
+                if(next_y >= 0 && next_y < max_height){
+                    player_y = next_y;
+                }
+            }
+            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
+            is_jumping = 0;
+            velocity_y = 0;
         }
         else{
-            next_y = player_y + (next_y - player_y)*2;
-            if(next_y >= 0 && next_y < max_height){
+            if (input == 's' && floor_tile == 'H'){
                 player_y = next_y;
             }
         }
-        floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
-        is_jumping = 0;
-        velocity_y = 0;
     }
     else {
         if (is_jumping) {
@@ -468,7 +477,11 @@ void move_player(char input) {
                     }
                     else if (velocity_y > 0) is_jumping = 0;
                 }
-                else player_y = next_y;
+                else if(maps[next_y][player_x] == 'H'){
+                    is_jumping = 0;
+                }else{
+                    player_y = next_y;
+                }
             }
             if ((player_y + 1 < max_height) && maps[player_y + 1][player_x] == '#') {
                 is_jumping = 0;
@@ -537,7 +550,7 @@ int kbhit(void) {
 
 void opening(void) {
     // 화면 잔상 제거
-    printf("\x1b[2J\x1b[H");
+    clrscr();
     printf("\n\n");
     printf("    ##########################################\n");
     printf("    #                                        #\n");
@@ -557,7 +570,7 @@ void opening(void) {
 
 int ending(int result) {
     // 화면 잔상 제거
-    printf("\x1b[2J\x1b[H");
+    clrscr();
     printf("\n\n");
     printf("    ##########################################\n");
     printf("    #                                        #\n");
@@ -619,10 +632,9 @@ void play_death_sound(void) {
     Beep(220, 100);
     Beep(220, 100);
     Beep(220, 100);
-    Sleep(50);
 #else
     // Apple, Linux - ANSI bell
-    printf("\a");
+    printf("\7");
     fflush(stdout);
 #endif
 }
