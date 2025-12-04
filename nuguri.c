@@ -419,7 +419,7 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (player_y + 1 < max_height) next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder || floor_tile)) {
+            if (!is_jumping && (floor_tile == '#' || on_ladder || floor_tile == 'H')) {
                 is_jumping = 1;
                 velocity_y = -3;
                 play_jump_sound();
@@ -448,7 +448,6 @@ void move_player(char input) {
                     player_y = next_y;
                 }
             }
-            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
             is_jumping = 0;
             velocity_y = 0;
         }
@@ -457,6 +456,7 @@ void move_player(char input) {
                 player_y = next_y;
             }
         }
+        floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
     }
     else {
         if (is_jumping) {
@@ -610,8 +610,28 @@ void play_jump_sound(void) {
 #ifdef _WIN32
     Beep(800, 10); // 20ms -> 10ms
 #else
-    // Apple, Linux - ANSI bell
-    printf("\a");
+    printf("\7");
+    fflush(stdout);
+#endif
+}
+
+void play_nextstage_sound(void) {
+#ifdef _WIN32
+    Beep(440, 50);
+    Beep(660, 150);
+#else
+    printf("\7");
+    fflush(stdout);
+#endif
+}
+
+void play_death_sound(void) {
+#ifdef _WIN32
+    Beep(220, 100);
+    Beep(220, 100);
+    Beep(220, 100);
+#else
+    printf("\7");
     fflush(stdout);
 #endif
 }
