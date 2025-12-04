@@ -111,7 +111,8 @@ void gotofirst(void){
 int main(void) {
     srand((unsigned)time(NULL));
     #ifdef _WIN32
-    SetConsoleOutputCP(949);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
+     SetConsoleOutputCP(CP_UTF8);   // Windows CMD 터미널에서 코드페이지 UTF-8로 인코딩설정 
+    // SetConsoleOutputCP(949);   // Visual Studio 터미널에서 코드페이지 949로 인코딩 설정 
     enable_ansi();
     #endif
 

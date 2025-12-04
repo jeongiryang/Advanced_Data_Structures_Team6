@@ -1,6 +1,29 @@
 # 고급자료구조  6조 너구리 게임 보고서
 
-[**GitHub 원격 저장소 주소**](https://github.com/JYH-2022/Advanced_Data_Structures_Team6.git)
+[**_GitHub 원격 저장소 주소_**](https://github.com/JYH-2022/Advanced_Data_Structures_Team6.git)
+
+## 유의사항! 
+**_기본 `Window cmd`와 `Visual studio` 터미널에서 인코딩 관련 실행할 때의 차이가 있는 부분이 있으므로_ 실행 환경에 따라서 `main `최상단에서 맞게 선택해주시길 바랍니다!**
+
+- **코드:**
+
+    ```c
+    int main(void){
+
+    ...
+    #ifdef _WIN32
+   // 윈도우 cmd일 때:
+        SetConsoleOutputCP(CP_UTF8);   <<
+  
+   // Visual Studio 터미널일 때:
+        SetConsoleOutputCP(949);   <<
+    #endif
+    ...
+        return 0;
+        }
+    ```      
+---
+
 
 > **개요**
 > 본 보고서는 고급자료구조 과목의 **과제3 -너구리 게임**에 대한 보고서 입니다.
