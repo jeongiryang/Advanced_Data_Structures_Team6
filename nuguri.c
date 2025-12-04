@@ -65,11 +65,8 @@ struct termios orig_termios;
 void opening(void);
 int ending(int result);
 void reset_game(void);
-
-void check_is_null(void *);
 void disable_raw_mode(void);
 void enable_raw_mode(void);
-void load_maps(void);
 void init_stage(void);
 void draw_game(void);
 void update_game(char input);
@@ -105,13 +102,16 @@ void clrscr(void) {
     printf("\x1b[2J\x1b[H");
 }
 
+// 커서를 화면 맨 위로 이동시키는 함수
 void gotofirst(void){
     printf("\x1b[H");
 }
+
+// 메인 함수
 int main(void) {
     srand((unsigned)time(NULL));
     #ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
+    SetConsoleOutputCP(949);   // Windows 콘솔 UTF-8 출력 설정 (main 상단에서 이 한 줄만으로 충분)
     enable_ansi();
     #endif
 
@@ -191,11 +191,10 @@ int main(void) {
             update_game(c);
             draw_game();
 
-            // 윈도우 버벅거림 해결: 20ms (약 50 FPS)로 설정하여 점프를 더 빠르고 부드럽게 만듦
 #ifndef _WIN32
             usleep(90000);
 #else
-            Sleep(90); // 기존 90ms -> 20ms (게임 속도 및 반응성 향상)
+            Sleep(90); 
 #endif
 
             if (collision_count >= 3) {
@@ -234,7 +233,7 @@ int main(void) {
 }
 
 void disable_raw_mode(void) {
-    // Windows 커서 복구 및 매크로 수정
+    // Windows 커서 복구 역할
     printf("\x1b[?25h");
     fflush(stdout);
     #ifndef _WIN32
@@ -243,7 +242,7 @@ void disable_raw_mode(void) {
 }
 
 void enable_raw_mode(void) {
-    // Windows 콘솔 초기화 및 커서 숨김
+    // 커서 숨김 역할
     printf("\x1b[?25l");
     fflush(stdout);
 
@@ -257,6 +256,7 @@ void enable_raw_mode(void) {
 #endif
 }
 
+// map.txt 파일에서 맵 데이터를 읽어오는 함수
 void load_maps3(FILE *file) {
     if (!file) {
         perror("map.txt 파일을 열 수 없습니다.");
@@ -319,7 +319,7 @@ void load_maps3(FILE *file) {
     }
 }
 
-
+// 동적으로 할당된 맵 메모리를 해제하는 함수
 void free_maps(void){
     if(maps != NULL){
         for(int y = 0; y < max_height; y++){
@@ -331,6 +331,7 @@ void free_maps(void){
     }
 }
 
+// 스테이지 초기화 함수
 void init_stage(void) {
     enemy_count = 0;
     coin_count = 0;
@@ -352,7 +353,7 @@ void init_stage(void) {
     }
 }
 
-// 윈도우 버벅거림 해결: 화면 그리기 (기존 방식 유지하되 커서 이동으로 깜빡임 방지)
+// 게임 화면을 그리는 함수
 void draw_game(void) {
     printf("\x1b[H"); // 커서를 맨 위로 이동 (덮어쓰기)
     printf("Stage: %d | Score: %d | HEART: %d\n", curr_stage + 1, score, 3 - collision_count);
@@ -398,12 +399,14 @@ void draw_game(void) {
     }
 }
 
+// 게임 상태를 업데이트하는 함수
 void update_game(char input) {
     move_player(input);
     move_enemies();
     check_collisions();
 }
 
+//플레이어 이동 로직을 처리하는 함수
 void move_player(char input) {
     // 플레이어 이동 로직 (기존 유지)
     int next_x = player_x, next_y = player_y;
@@ -419,7 +422,7 @@ void move_player(char input) {
         case 'w': if (on_ladder) next_y--; break;
         case 's': if (player_y + 1 < max_height) next_y++; break;
         case ' ':
-            if (!is_jumping && (floor_tile == '#' || on_ladder || floor_tile)) {
+            if (!is_jumping && (floor_tile == '#' || on_ladder || floor_tile == 'H')) {
                 is_jumping = 1;
                 velocity_y = -3;
                 play_jump_sound();
@@ -448,7 +451,6 @@ void move_player(char input) {
                     player_y = next_y;
                 }
             }
-            floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
             is_jumping = 0;
             velocity_y = 0;
         }
@@ -457,6 +459,7 @@ void move_player(char input) {
                 player_y = next_y;
             }
         }
+        floor_tile = (player_y + 1 < max_height) ? maps[player_y + 1][player_x] : '#';
     }
     else {
         if (is_jumping) {
@@ -473,7 +476,7 @@ void move_player(char input) {
                                 player_y = next_y - 1;
                                 is_jumping = 0;
                             }
-                        }//점프로 사다리 올라가기 대신 화살표키로 변경. 위아래 가능*/
+                        }//점프로 사다리 올라가기 대신 화살표키로 변경.*/
                     }
                     else if (velocity_y > 0) is_jumping = 0;
                 }
@@ -498,6 +501,7 @@ void move_player(char input) {
     if (player_y >= max_height) init_stage();
 }
 
+//적 캐릭터들의 이동을 처리하는 함수
 void move_enemies(void) {
     for (int i = 0; i < enemy_count; i++) {
         int next_x = enemies[i].x + enemies[i].dir;
@@ -509,12 +513,14 @@ void move_enemies(void) {
     }
 }
 
+// 플레이어와 적, 플레이어와 코인 간의 충돌을 검사하는 함수
 void check_collisions(void) {
     for (int i = 0; i < enemy_count; i++) {
         if (player_x == enemies[i].x && player_y == enemies[i].y) {
             play_death_sound();
             collision_count++;
             score = (score > 50) ? score - 50 : 0;
+            clrscr();
             init_stage();
             return;
         }
@@ -527,6 +533,7 @@ void check_collisions(void) {
     }
 }
 
+//키보드 입력이 있는지 확인하는 함수
 #ifdef _WIN32
 int kbhit(void) { return _kbhit(); }
 #else
@@ -548,6 +555,7 @@ int kbhit(void) {
 }
 #endif
 
+// 게임 시작 화면을 표시하는 함수
 void opening(void) {
     // 화면 잔상 제거
     clrscr();
@@ -568,6 +576,7 @@ void opening(void) {
 #endif
 }
 
+//게임 종료 화면을 표시하는 함수
 int ending(int result) {
     // 화면 잔상 제거
     clrscr();
@@ -599,42 +608,45 @@ int ending(int result) {
     }
 }
 
+//게임을 초기 상태로 리셋하는 함수 스테이지, 점수, 충돌 횟수(생명)를 초기화
 void reset_game(void) {
     curr_stage = 0;
     score = 0;
     collision_count = 0;
 }
 
-// 점프 효과음 (윈도우 버벅거림 해결: 재생 시간 10ms로 더 단축)
+// 점프 시 재생되는 효과음 함수
 void play_jump_sound(void) {
 #ifdef _WIN32
-    Beep(800, 10); // 20ms -> 10ms
+    Beep(800, 10); 
 #else
-    // Apple, Linux - ANSI bell
-    printf("\a");
+    printf("\7");
     fflush(stdout);
 #endif
 }
 
+//다음 스테이지 진입 시 재생되는 효과음 함수
 void play_nextstage_sound(void) {
 #ifdef _WIN32
     Beep(440, 50);
     Beep(660, 150);
 #else
-    // Apple, Linux - ANSI bell
-    printf("\a");
+    printf("\7");
     fflush(stdout);
 #endif
 }
 
+//플레이어가 적과 충돌하여 사망할 때 재생되는 효과음 함수
 void play_death_sound(void) {
 #ifdef _WIN32
     Beep(220, 100);
     Beep(220, 100);
     Beep(220, 100);
+    Sleep(50);
 #else
-    // Apple, Linux - ANSI bell
     printf("\7");
     fflush(stdout);
+    usleep(50000);
 #endif
 }
+
