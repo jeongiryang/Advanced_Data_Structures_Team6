@@ -102,7 +102,7 @@ void enable_ansi(void) { // 윈도우 10에서 ANSI 이스케이프 시퀀스를
 
 // 화면 지우기 방식 개선 (화면 전체 지우기 제거 후 커서 이동 -> 깜빡임/윈도우 버벅거림 최소화)
 void clrscr(void) {
-    printf("\x1b[2Jx1b[H");
+    printf("\x1b[2J\x1b[H");
 }
 
 void gotofirst(void){
