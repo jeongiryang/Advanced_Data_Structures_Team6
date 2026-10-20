@@ -1,3 +1,54 @@
+# Nuguri — 터미널 너구리 게임
+
+수업에서 제공된 C 게임을 분석하고, 맵 로딩·충돌·생명력·장면 전환과 OS 호환 처리를 수정한 4인 팀 과제입니다.
+
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black)
+![Windows · Linux · macOS](https://img.shields.io/badge/Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-555555?style=flat-square)
+
+[실행](#실행) · [조작](#조작) · [소스](nuguri.c) · [맵 데이터](map.txt) · [팀 과제 보고서](#과제-보고서)
+
+| 시작 화면 | 게임 화면 | 엔딩 |
+| --- | --- | --- |
+| ![기존 결과: 시작 화면](screenshots/8.png) | ![기존 결과: 플레이 화면](screenshots/6.png) | ![기존 결과: 클리어 화면](screenshots/9.png) |
+
+## 실행
+
+`nuguri.c`와 `map.txt`가 있는 저장소 루트에서 실행합니다.
+
+```bash
+# Linux / macOS
+gcc nuguri.c -o nuguri
+./nuguri
+```
+
+```bat
+:: Windows / MinGW
+gcc nuguri.c -o nuguri.exe
+nuguri.exe
+```
+
+Windows에서는 터미널에 따라 `main()`의 `SetConsoleOutputCP` 설정이 필요합니다. GCC 8.1.0 이상·MinGW 설정과 인코딩 설명은 아래 보고서에 있습니다.
+
+## 조작
+
+| 입력 | 동작 |
+| --- | --- |
+| 방향키 | 이동·사다리 |
+| `Space` | 점프 |
+| `q` | 종료 |
+| 엔딩에서 `r` / `q` | 다시 시작 / 나가기 |
+
+맵을 진행하며 동전을 모으고 출구에 도달합니다. 적과 충돌하면 생명력이 줄어들며, 게임 종료 뒤 다시 시작할 수 있습니다.
+
+## 담당
+
+정이량은 `opening()`, `ending()`, `reset_game()`을 맡아 오프닝·성공/실패 엔딩·재시작 흐름을 추가했습니다. 이동·맵·효과음·호환성 등 팀 전체 구현과 역할 분담은 보고서에 남겼습니다.
+
+## 과제 보고서
+
+<details>
+<summary>기존 과제 보고서 펼치기</summary>
+
 # 고급자료구조  6조 너구리 게임 보고서
 
 [**_GitHub 원격 저장소 주소_**](https://github.com/jeongiryang/Advanced_Data_Structures_Team6.git)
@@ -666,3 +717,5 @@
 - [markdown 문법](https://gist.github.com/ihoneymon/652be052a0727ad59601)
 - [Beep 함수](https://blog.naver.com/ndb796/220576603438)
 - [fseek, ftell 함수](https://coding-by-head.tistory.com/entry/cstdlib-file-pointer)
+
+</details>
